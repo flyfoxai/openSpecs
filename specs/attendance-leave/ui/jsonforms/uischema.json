@@ -1,0 +1,47 @@
+{
+  "type": "Categorization",
+  "elements": [
+    {
+      "type": "Category",
+      "label": "申请信息",
+      "elements": [
+        {
+          "type": "VerticalLayout",
+          "elements": [
+            {
+              "type": "Control",
+              "scope": "#/properties/leaveType"
+            },
+            {
+              "type": "Control",
+              "scope": "#/properties/startAt"
+            },
+            {
+              "type": "Control",
+              "scope": "#/properties/endAt"
+            },
+            {
+              "type": "Control",
+              "scope": "#/properties/halfDay"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "Category",
+      "label": "原因说明",
+      "elements": [
+        {
+          "type": "VerticalLayout",
+          "elements": [
+            {
+              "type": "Control",
+              "scope": "#/properties/reason"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

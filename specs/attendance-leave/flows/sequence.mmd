@@ -1,0 +1,23 @@
+sequenceDiagram
+    actor Employee
+    participant ApplyPage as SCREEN-LEAVE-APPLY
+    participant LeaveAPI as API-LEAVE-CREATE
+    participant LeaveTable as TABLE-LEAVE_REQUEST
+    actor Manager
+    participant ApprovalPage as SCREEN-LEAVE-APPROVAL
+    participant ApprovalAPI as API-LEAVE-APPROVE
+    participant ApprovalTable as TABLE-LEAVE_APPROVAL
+    participant EventBus as EVT-LEAVE-APPROVED
+
+    Employee->>ApplyPage: STEP-LEAVE-010 enter apply page
+    ApplyPage->>ApplyPage: DEC-LEAVE-020 validate RULE-LEAVE-001/002/008
+    ApplyPage->>ApplyPage: DEC-LEAVE-030 validate RULE-LEAVE-003/009
+    ApplyPage->>LeaveAPI: STEP-LEAVE-040 submit UC-LEAVE-SUBMIT
+    LeaveAPI->>LeaveTable: STEP-LEAVE-060 create pending request
+    LeaveAPI-->>Employee: return requestId and STATE-REQUEST-PENDING
+    Manager->>ApprovalPage: STEP-LEAVE-080 open approval worklist
+    ApprovalPage->>ApprovalAPI: STEP-LEAVE-100 submit UC-LEAVE-APPROVE
+    ApprovalAPI->>LeaveTable: STEP-LEAVE-110 update request status approved
+    ApprovalAPI->>ApprovalTable: STEP-LEAVE-110 insert approval action
+    ApprovalAPI->>EventBus: STEP-LEAVE-120 emit approved event
+    EventBus-->>Employee: STEP-LEAVE-140 notification generated

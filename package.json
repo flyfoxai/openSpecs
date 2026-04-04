@@ -1,0 +1,7 @@
+{
+  "name": "speckit-layered",
+  "version": "0.1.0",
+  "private": true,
+  "description": "将 Spec Kit 改造成两层推进方法的独立项目。",
+  "license": "UNLICENSED"
+}

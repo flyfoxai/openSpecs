@@ -1,0 +1,173 @@
+{
+  "type": "Categorization",
+  "elements": [
+    {
+      "type": "Category",
+      "label": "搜索目录设置",
+      "elements": [
+        {
+          "type": "VerticalLayout",
+          "elements": [
+            {
+              "type": "Control",
+              "scope": "#/properties/searchSettings/properties/userCodexDir",
+              "options": {
+                "placeholder": "/Users/name/.codex"
+              }
+            },
+            {
+              "type": "Control",
+              "scope": "#/properties/searchSettings/properties/workspaceRoots"
+            },
+            {
+              "type": "Control",
+              "scope": "#/properties/searchSettings/properties/manualProjects"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "Category",
+      "label": "具体设置项",
+      "elements": [
+        {
+          "type": "Group",
+          "label": "配置项基础信息",
+          "elements": [
+            {
+              "type": "HorizontalLayout",
+              "elements": [
+                {
+                  "type": "Control",
+                  "scope": "#/properties/configItem/properties/key"
+                },
+                {
+                  "type": "Control",
+                  "scope": "#/properties/configItem/properties/includeInToml"
+                },
+                {
+                  "type": "Control",
+                  "scope": "#/properties/configItem/properties/requiredItem"
+                }
+              ]
+            },
+            {
+              "type": "Control",
+              "scope": "#/properties/configItem/properties/summary",
+              "options": {
+                "multi": true
+              }
+            }
+          ]
+        },
+        {
+          "type": "Group",
+          "label": "值与输入方式",
+          "elements": [
+            {
+              "type": "Control",
+              "scope": "#/properties/configItem/properties/currentValueType",
+              "options": {
+                "format": "radio"
+              }
+            },
+            {
+              "type": "Control",
+              "scope": "#/properties/configItem/properties/boolValue",
+              "rule": {
+                "effect": "SHOW",
+                "condition": {
+                  "scope": "#/properties/configItem/properties/currentValueType",
+                  "schema": {
+                    "const": "boolean"
+                  }
+                }
+              },
+              "options": {
+                "format": "radio"
+              }
+            },
+            {
+              "type": "Control",
+              "scope": "#/properties/configItem/properties/enumValue",
+              "rule": {
+                "effect": "SHOW",
+                "condition": {
+                  "scope": "#/properties/configItem/properties/currentValueType",
+                  "schema": {
+                    "const": "enum"
+                  }
+                }
+              }
+            },
+            {
+              "type": "Control",
+              "scope": "#/properties/configItem/properties/textValue",
+              "rule": {
+                "effect": "SHOW",
+                "condition": {
+                  "scope": "#/properties/configItem/properties/currentValueType",
+                  "schema": {
+                    "const": "text"
+                  }
+                }
+              }
+            }
+          ]
+        },
+        {
+          "type": "Group",
+          "label": "作用域",
+          "elements": [
+            {
+              "type": "Control",
+              "scope": "#/properties/configItem/properties/scopeMode",
+              "options": {
+                "format": "radio"
+              }
+            },
+            {
+              "type": "Control",
+              "scope": "#/properties/configItem/properties/targetProjects",
+              "rule": {
+                "effect": "SHOW",
+                "condition": {
+                  "scope": "#/properties/configItem/properties/scopeMode",
+                  "schema": {
+                    "const": "project"
+                  }
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "Category",
+      "label": "其他设置",
+      "elements": [
+        {
+          "type": "VerticalLayout",
+          "elements": [
+            {
+              "type": "Control",
+              "scope": "#/properties/otherSettings/properties/preserveComments",
+              "options": {
+                "format": "radio"
+              }
+            },
+            {
+              "type": "Control",
+              "scope": "#/properties/otherSettings/properties/showUnknownKeys",
+              "options": {
+                "format": "radio"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
