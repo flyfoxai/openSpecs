@@ -199,9 +199,18 @@ try {
     $version = "unknown"
     $packageJson = Join-Path $sourceRoot "package.json"
     if (Test-Path $packageJson) {
-        $package = Get-Content -Raw -Path $packageJson | ConvertFrom-Json
-        if ($package.version) {
-            $version = [string]$package.version
+        $packageRaw = Get-Content -Raw -Path $packageJson
+        try {
+            $package = $packageRaw | ConvertFrom-Json
+            if ($package.version) {
+                $version = [string]$package.version
+            }
+        }
+        catch {
+            $versionMatch = [regex]::Match($packageRaw, '"version"\s*:\s*"(?<version>[^"]+)"')
+            if ($versionMatch.Success) {
+                $version = $versionMatch.Groups["version"].Value
+            }
         }
     }
 

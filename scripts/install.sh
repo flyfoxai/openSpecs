@@ -127,7 +127,7 @@ copy_tree() {
 }
 
 write_install_manifest() {
-  version="$(sed -n 's/.*"version": "\(.*\)".*/\1/p' "$SOURCE_ROOT/package.json" | head -n 1)"
+  version="$(sed -n 's/.*"version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$SOURCE_ROOT/package.json" | head -n 1)"
   if [ -z "$version" ]; then
     version="unknown"
   fi
