@@ -58,3 +58,9 @@ Less useful for very small tools with only a few pages and simple rules.
 3. `.specify/memory/constitution.md`
 4. `.specify/memory/project-index.md`
 5. Start the first feature with `sp.specify`
+
+## Codex Notes
+
+- Codex uses skills only, with `$sp-*` triggers
+- `/sp.*` does not belong to Codex
+- To place `sp-*` skills into the Codex skills directory, installation must be run in Codex mode

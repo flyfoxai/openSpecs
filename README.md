@@ -46,6 +46,7 @@
 ```bash
 sh scripts/install.sh
 sh scripts/install.sh ./your-project
+sh scripts/install.sh --ai codex --ai-skills ./your-project
 ```
 
 远程一条命令安装：
@@ -59,6 +60,7 @@ Windows 本地安装：
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\scripts\install.ps1
 powershell -ExecutionPolicy Bypass -File .\scripts\install.ps1 .\your-project
+powershell -ExecutionPolicy Bypass -File .\scripts\install.ps1 -Ai codex -AiSkills .\your-project
 ```
 
 Windows 远程一条命令安装：
@@ -68,6 +70,13 @@ $env:SP_INSTALL_ARCHIVE_URL="https://github.com/flyfoxai/openSpecs/archive/refs/
 ```
 
 如果不指定目录，默认安装到当前目录。默认会先提示确认，只有 `--yes`、`-Yes` 或环境变量显式开启后才会跳过。
+
+Codex 集成说明：
+
+- Codex 只使用 skills，触发方式是 `$sp-*`
+- `/sp.*` 只属于 slash-command agents
+- 只有在使用 `--ai codex --ai-skills` 或 `-Ai codex -AiSkills` 时，安装器才会把 `sp-*` skills 写入 Codex skills 目录
+- Codex 模式下，“安装成功”必须同时包含项目内模板和实际写入的 `sp-*` skills
 
 ## 适合什么项目
 

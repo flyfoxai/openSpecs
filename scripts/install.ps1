@@ -4,12 +4,20 @@ param(
 
     [switch]$Yes,
 
-    [string]$ArchiveUrl
+    [string]$ArchiveUrl,
+
+    [string]$Ai,
+
+    [switch]$AiSkills
 )
 
 $ErrorActionPreference = "Stop"
 
 $script:DownloadDir = $null
+$script:ResolvedCodexHome = $null
+$script:ResolvedCodexSkillsDir = $null
+$script:InstalledSkills = @()
+$script:DetectedCodexHome = $env:CODEX_HOME
 
 function Cleanup {
     if ($script:DownloadDir -and (Test-Path $script:DownloadDir)) {
@@ -23,6 +31,7 @@ Usage:
   powershell -ExecutionPolicy Bypass -File .\scripts\install.ps1 [target_dir]
   powershell -ExecutionPolicy Bypass -File .\scripts\install.ps1 -Yes [target_dir]
   powershell -ExecutionPolicy Bypass -File .\scripts\install.ps1 -ArchiveUrl <zip-url> [target_dir]
+  powershell -ExecutionPolicy Bypass -File .\scripts\install.ps1 -Ai codex -AiSkills [target_dir]
 
 Behavior:
   - If target_dir is omitted, install into the current directory.
@@ -30,6 +39,7 @@ Behavior:
   - Windows local mode copies assets from the current repository.
   - iwr|iex mode requires -ArchiveUrl or SP_INSTALL_ARCHIVE_URL.
   - Remote mode can also use SP_INSTALL_TARGET_DIR and SP_INSTALL_AUTO_YES.
+  - Codex skills install is enabled only with -Ai codex -AiSkills.
 "@
 }
 
@@ -68,6 +78,21 @@ function Copy-Tree {
 
     New-Item -ItemType Directory -Force -Path $Destination | Out-Null
     Copy-Item -Path (Join-Path $Source "*") -Destination $Destination -Recurse -Force
+}
+
+function Get-CodexSkillSlugs {
+    @(
+        "sp-constitution",
+        "sp-specify",
+        "sp-clarify",
+        "sp-flow",
+        "sp-ui",
+        "sp-gate",
+        "sp-bundle",
+        "sp-plan",
+        "sp-tasks",
+        "sp-analyze"
+    )
 }
 
 function Resolve-SourceRoot {
@@ -131,6 +156,71 @@ function Resolve-SourceRoot {
     }
 }
 
+function Resolve-CodexPaths {
+    if ($script:DetectedCodexHome) {
+        $script:ResolvedCodexHome = $script:DetectedCodexHome
+    }
+    else {
+        $userProfile = [Environment]::GetFolderPath("UserProfile")
+        if (-not $userProfile) {
+            throw "Codex skills installation failed: unable to resolve USERPROFILE for default .codex fallback."
+        }
+        $script:ResolvedCodexHome = Join-Path $userProfile ".codex"
+    }
+
+    $script:ResolvedCodexSkillsDir = Join-Path $script:ResolvedCodexHome "skills"
+    if (-not $script:ResolvedCodexSkillsDir) {
+        throw "Codex skills installation failed: resolved skills directory missing or empty."
+    }
+}
+
+function Install-CodexSkills {
+    param(
+        [string]$SourceRoot
+    )
+
+    if (-not (Get-Command codex -ErrorAction SilentlyContinue)) {
+        throw "Codex skills installation failed: 'codex' command not found in PATH."
+    }
+
+    Resolve-CodexPaths
+
+    $skillsSourceRoot = Join-Path $SourceRoot "installer-assets/codex-skills"
+    if (-not (Test-Path $skillsSourceRoot)) {
+        throw "Codex skills installation failed: missing installer-assets/codex-skills in source."
+    }
+
+    try {
+        New-Item -ItemType Directory -Force -Path $script:ResolvedCodexSkillsDir | Out-Null
+    }
+    catch {
+        throw "Codex skills installation failed: resolved skills directory missing or unwritable: $script:ResolvedCodexSkillsDir"
+    }
+
+    $script:InstalledSkills = @()
+
+    foreach ($slug in Get-CodexSkillSlugs) {
+        $src = Join-Path $skillsSourceRoot $slug
+        $dest = Join-Path $script:ResolvedCodexSkillsDir $slug
+
+        if (-not (Test-Path (Join-Path $src "SKILL.md"))) {
+            throw "Codex skills installation failed: missing source skill file for $slug"
+        }
+
+        Copy-Tree -Source $src -Destination $dest
+
+        if (-not (Test-Path (Join-Path $dest "SKILL.md"))) {
+            throw "Codex skills installation failed: failed to write $slug into $script:ResolvedCodexSkillsDir"
+        }
+
+        $script:InstalledSkills += $slug
+    }
+
+    if ($script:InstalledSkills.Count -eq 0) {
+        throw "Codex skills installation failed: no sp-* skills were written to $script:ResolvedCodexSkillsDir"
+    }
+}
+
 try {
     if (-not $PSBoundParameters.ContainsKey("TargetDir") -or [string]::IsNullOrWhiteSpace($TargetDir)) {
         if ($env:SP_INSTALL_TARGET_DIR) {
@@ -145,6 +235,15 @@ try {
         $ArchiveUrl = $env:SP_INSTALL_ARCHIVE_URL
     }
 
+    if (-not $PSBoundParameters.ContainsKey("Ai") -and $env:SP_INSTALL_AI) {
+        $Ai = $env:SP_INSTALL_AI
+    }
+
+    $installCodexSkills = $AiSkills.IsPresent
+    if ((-not $installCodexSkills) -and $env:SP_INSTALL_AI_SKILLS -match '^(?i:1|true|yes|y)$') {
+        $installCodexSkills = $true
+    }
+
     $autoYes = $Yes.IsPresent
     if ((-not $autoYes) -and $env:SP_INSTALL_AUTO_YES -match '^(?i:1|true|yes|y)$') {
         $autoYes = $true
@@ -155,9 +254,25 @@ try {
         exit 0
     }
 
+    if ($Ai -and $Ai -ne "codex") {
+        throw "This installer only supports Codex skills via -Ai codex -AiSkills."
+    }
+
+    if ($Ai -eq "codex" -and -not $installCodexSkills) {
+        throw "Codex installation requires -AiSkills. Use -Ai codex -AiSkills."
+    }
+
+    if ($installCodexSkills -and $Ai -ne "codex") {
+        throw "-AiSkills currently requires -Ai codex."
+    }
+
     $sourceInfo = Resolve-SourceRoot -ArchiveUrlValue $ArchiveUrl
     $sourceRoot = $sourceInfo.Root
     $sourceMode = $sourceInfo.Mode
+
+    if ($installCodexSkills) {
+        Resolve-CodexPaths
+    }
 
     New-Item -ItemType Directory -Force -Path $TargetDir | Out-Null
     $targetAbs = (Resolve-Path $TargetDir).Path
@@ -177,6 +292,14 @@ try {
         Write-Host "  - .specify/memory/"
         Write-Host "  - specs/"
         Write-Host "  - .sp/install-manifest.json"
+        if ($installCodexSkills) {
+            Write-Host "  - Codex skills: $((Get-CodexSkillSlugs) -join ', ')"
+            Write-Host ""
+            Write-Host "Codex integration:"
+            Write-Host "  detected CODEX_HOME: $(if ($script:DetectedCodexHome) { $script:DetectedCodexHome } else { '<empty>' })"
+            Write-Host "  resolved Codex home: $script:ResolvedCodexHome"
+            Write-Host "  resolved skills directory: $script:ResolvedCodexSkillsDir"
+        }
         Write-Host ""
         Write-Host "Managed paths that already exist:"
         Write-Host "  $existingCount"
@@ -195,6 +318,10 @@ try {
     Copy-Tree -Source (Join-Path $sourceRoot "installer-assets/project/.specify/memory") -Destination (Join-Path $targetAbs ".specify/memory")
 
     New-Item -ItemType Directory -Force -Path (Join-Path $targetAbs "specs") | Out-Null
+
+    if ($installCodexSkills) {
+        Install-CodexSkills -SourceRoot $sourceRoot
+    }
 
     $version = "unknown"
     $packageJson = Join-Path $sourceRoot "package.json"
@@ -223,17 +350,58 @@ try {
         installedAt = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
         sourceMode = $sourceMode
         targetDir = $targetAbs
-    } | ConvertTo-Json
+    }
 
-    Set-Content -Path (Join-Path $manifestDir "install-manifest.json") -Value $manifest
+    if ($installCodexSkills) {
+        $manifest["ai"] = "codex"
+        $manifest["detectedCodexHome"] = if ($script:DetectedCodexHome) { $script:DetectedCodexHome } else { "" }
+        $manifest["codexHome"] = $script:ResolvedCodexHome
+        $manifest["codexSkillsDir"] = $script:ResolvedCodexSkillsDir
+        $manifest["installedSkills"] = $script:InstalledSkills
+    }
+
+    $manifest | ConvertTo-Json -Depth 4 | Set-Content -Path (Join-Path $manifestDir "install-manifest.json")
 
     Write-Host "sp document-stage starter pack installed to:"
     Write-Host "  $targetAbs"
+
+    if ($installCodexSkills) {
+        Write-Host ""
+        Write-Host "Codex integration:"
+        Write-Host "  detected CODEX_HOME: $(if ($script:DetectedCodexHome) { $script:DetectedCodexHome } else { '<empty>' })"
+        Write-Host "  resolved Codex home: $script:ResolvedCodexHome"
+        Write-Host "  resolved skills directory: $script:ResolvedCodexSkillsDir"
+        Write-Host "  installed sp-* skills:"
+        foreach ($skill in $script:InstalledSkills) {
+            Write-Host "    - $skill"
+        }
+        Write-Host ""
+        Write-Host "Codex trigger examples:"
+        Write-Host '  $sp-specify'
+        Write-Host '  $sp-analyze'
+        Write-Host "  reload the Codex workspace if the new skills do not appear immediately"
+    }
+    else {
+        Write-Host ""
+        Write-Host "Codex skills were not installed."
+        Write-Host "To install Codex skills as well, rerun with:"
+        Write-Host "  powershell -ExecutionPolicy Bypass -File .\scripts\install.ps1 -Ai codex -AiSkills $TargetDir"
+    }
+
+    Write-Host ""
+    Write-Host "Trigger conventions:"
+    Write-Host '  - Codex skills use $sp-*'
+    Write-Host "  - slash-command agents use /sp.*"
     Write-Host ""
     Write-Host "Recommended next steps:"
     Write-Host "  1. Read docs/sp-overview.zh-CN.md or docs/sp-overview.en.md"
     Write-Host "  2. Review .specify/memory/constitution.md"
-    Write-Host "  3. Start your first feature with sp.specify"
+    if ($installCodexSkills) {
+        Write-Host '  3. Reload Codex, then start with $sp-specify'
+    }
+    else {
+        Write-Host "  3. Start the workflow with sp.specify in your target agent"
+    }
 }
 finally {
     Cleanup

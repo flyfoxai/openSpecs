@@ -27,6 +27,12 @@ The current phase covers documentation only. The workflow ends at `sp.analyze` a
 9. `sp.tasks`
 10. `sp.analyze`
 
+## Trigger Forms
+
+- Codex skills use `$sp-*`
+- Slash-command agents use `/sp.*`
+- `sp-*` skills are written into the Codex skills directory only when Codex mode is enabled during installation
+
 ## Read Next
 
 - Detailed overview: `docs/sp-overview-details.en.md`

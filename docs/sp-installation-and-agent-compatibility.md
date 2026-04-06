@@ -210,7 +210,13 @@ fork 时建议延续原版“按 agent 写入不同命令目录”的方式。
 其中 Codex 还有额外要求：
 
 - 检测 `codex` 工具是否存在
-- 检测 `CODEX_HOME` 是否已设置
+- 优先读取 `CODEX_HOME`
+- 若 `CODEX_HOME` 为空，则回退到系统默认目录
+- Windows: `%USERPROFILE%\.codex`
+- macOS / Linux: `~/.codex`
+- 最终 skills 安装目录为 `<codex_home>/skills`
+- 若目录不存在，应主动创建
+- 若目录仍无法解析或不可写，应直接报错
 - 初始化时支持 `--ai codex --ai-skills`
 - 将命令以 Codex skills 形式安装，并采用 `$sp-*` 调用方式
 - 升级后提醒用户重载 workspace 或重新打开 agent
@@ -224,6 +230,10 @@ skills 型 agent 的实现约束：
 Codex 的额外实现约束：
 
 - 命令文件命名应与 `$sp-*` 调用方式一致
+- 选择 Codex 模式后，“安装成功”必须同时满足：
+- 项目内模板已生成
+- `sp-*` skills 已实际写入 Codex skills 目录
+- 安装器输出实际写入的 skill 列表和触发示例
 
 ## 7.1 Generic Agent 兼容要求
 

@@ -58,3 +58,9 @@
 3. `.specify/memory/constitution.md`
 4. `.specify/memory/project-index.md`
 5. 开始第一个 feature 的 `sp.specify`
+
+## Codex 补充说明
+
+- Codex 只走 skills，命令触发形式固定为 `$sp-*`
+- `/sp.*` 不属于 Codex
+- 若要把 `sp-*` skills 装到 Codex skills 目录，安装时必须启用 Codex 模式

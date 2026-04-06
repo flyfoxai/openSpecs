@@ -27,6 +27,12 @@
 9. `sp.tasks`
 10. `sp.analyze`
 
+## 触发方式
+
+- Codex skills 使用 `$sp-*`
+- slash-command agents 使用 `/sp.*`
+- 只有在安装时启用 Codex 模式，`sp-*` skills 才会被写入 Codex skills 目录
+
 ## 下一步看哪里
 
 - 详细说明：`docs/sp-overview-details.zh-CN.md`

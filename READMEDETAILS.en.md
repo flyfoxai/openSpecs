@@ -280,6 +280,23 @@ Notes:
 - `curl | sh` mode accepts `--archive-url` and an optional target directory
 - `irm | iex` mode uses `SP_INSTALL_ARCHIVE_URL`, `SP_INSTALL_TARGET_DIR`, and `SP_INSTALL_AUTO_YES`
 
+If you want to install Codex skills as part of the starter pack, enable Codex mode explicitly:
+
+```bash
+sh scripts/install.sh --ai codex --ai-skills ./your-project
+```
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\install.ps1 -Ai codex -AiSkills .\your-project
+```
+
+In that mode, the installer now prints:
+
+- detected `CODEX_HOME`
+- the resolved Codex home and skills directory
+- the installed `sp-*` skill list
+- direct trigger examples such as `$sp-specify`
+
 After installation, you can already use the documentation rules and examples directly:
 
 - Read the root README files and the `docs/` directory
@@ -310,6 +327,12 @@ Command trigger conventions:
 - Slash-command agents: `/sp.specify`
 - Codex skills mode: `$sp-specify`
 
+These forms must stay separate:
+
+- `/sp.*` belongs only to slash-command agents
+- `$sp-*` belongs only to Codex skills
+- Codex examples must not be written as `/prompt:sp.analyze`, `/sp.analyze`, or any other slash-command form
+
 The same pattern applies to the other commands:
 
 - `/sp.constitution`
@@ -321,6 +344,15 @@ The same pattern applies to the other commands:
 - `/sp.plan`
 - `/sp.tasks`
 - `/sp.analyze`
+- `$sp-constitution`
+- `$sp-clarify`
+- `$sp-flow`
+- `$sp-ui`
+- `$sp-gate`
+- `$sp-bundle`
+- `$sp-plan`
+- `$sp-tasks`
+- `$sp-analyze`
 
 Cross-platform compatibility principles:
 

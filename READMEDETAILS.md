@@ -280,6 +280,23 @@ $env:SP_INSTALL_ARCHIVE_URL="https://github.com/flyfoxai/openSpecs/archive/refs/
 - `curl | sh` 场景支持通过 `--archive-url` 与可选目标目录传参
 - `irm | iex` 场景通过 `SP_INSTALL_ARCHIVE_URL`、`SP_INSTALL_TARGET_DIR`、`SP_INSTALL_AUTO_YES` 传参
 
+如果当前要给 Codex 安装 skills，需要显式启用 Codex 模式：
+
+```bash
+sh scripts/install.sh --ai codex --ai-skills ./your-project
+```
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\install.ps1 -Ai codex -AiSkills .\your-project
+```
+
+当前仓库里的 starter pack 安装器只有在上述模式下才会尝试写入 Codex skills 目录，并在结束时打印：
+
+- 检测到的 `CODEX_HOME`
+- 最终使用的 Codex home 与 skills 目录
+- 已安装的 `sp-*` skills 列表
+- 可直接触发的示例，例如 `$sp-specify`
+
 安装完成后，你可以直接用这套文档规范和样例推进设计工作：
 
 - 先阅读根 README 和 `docs/`
@@ -309,6 +326,12 @@ specify check
 - slash command agent：`/sp.specify`
 - Codex skills 模式：`$sp-specify`
 
+必须明确区分：
+
+- `/sp.*` 只属于 slash-command agents
+- `$sp-*` 只属于 Codex skills
+- 不应把 Codex 示例写成 `/prompt:sp.analyze`、`/sp.analyze` 或其他 slash command 形式
+
 其他命令同理：
 
 - `/sp.constitution`
@@ -320,6 +343,15 @@ specify check
 - `/sp.plan`
 - `/sp.tasks`
 - `/sp.analyze`
+- `$sp-constitution`
+- `$sp-clarify`
+- `$sp-flow`
+- `$sp-ui`
+- `$sp-gate`
+- `$sp-bundle`
+- `$sp-plan`
+- `$sp-tasks`
+- `$sp-analyze`
 
 跨平台兼容原则：
 
