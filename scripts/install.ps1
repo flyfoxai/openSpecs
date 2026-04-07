@@ -18,6 +18,8 @@ $script:ResolvedCodexHome = $null
 $script:ResolvedCodexSkillsDir = $null
 $script:InstalledSkills = @()
 $script:DetectedCodexHome = $env:CODEX_HOME
+$script:ResolvedClaudeCommandsDir = $null
+$script:InstalledCommands = @()
 
 function Cleanup {
     if ($script:DownloadDir -and (Test-Path $script:DownloadDir)) {
@@ -31,7 +33,8 @@ Usage:
   powershell -ExecutionPolicy Bypass -File .\scripts\install.ps1 [target_dir]
   powershell -ExecutionPolicy Bypass -File .\scripts\install.ps1 -Yes [target_dir]
   powershell -ExecutionPolicy Bypass -File .\scripts\install.ps1 -ArchiveUrl <zip-url> [target_dir]
-  powershell -ExecutionPolicy Bypass -File .\scripts\install.ps1 -Ai codex -AiSkills [target_dir]
+  powershell -ExecutionPolicy Bypass -File .\scripts\install.ps1 -Ai codex [target_dir]
+  powershell -ExecutionPolicy Bypass -File .\scripts\install.ps1 -Ai claude [target_dir]
 
 Behavior:
   - If target_dir is omitted, install into the current directory.
@@ -39,7 +42,9 @@ Behavior:
   - Windows local mode copies assets from the current repository.
   - iwr|iex mode requires -ArchiveUrl or SP_INSTALL_ARCHIVE_URL.
   - Remote mode can also use SP_INSTALL_TARGET_DIR and SP_INSTALL_AUTO_YES.
-  - Codex skills install is enabled only with -Ai codex -AiSkills.
+  - -Ai codex installs Codex sp-* skills into the Codex skills directory.
+  - -Ai claude installs /sp.* slash commands into .claude/commands in the target project.
+  - -AiSkills is kept only as a compatibility alias for Codex mode.
 "@
 }
 
@@ -92,6 +97,21 @@ function Get-CodexSkillSlugs {
         "sp-plan",
         "sp-tasks",
         "sp-analyze"
+    )
+}
+
+function Get-ClaudeCommandFiles {
+    @(
+        "sp.constitution.md",
+        "sp.specify.md",
+        "sp.clarify.md",
+        "sp.flow.md",
+        "sp.ui.md",
+        "sp.gate.md",
+        "sp.bundle.md",
+        "sp.plan.md",
+        "sp.tasks.md",
+        "sp.analyze.md"
     )
 }
 
@@ -221,6 +241,51 @@ function Install-CodexSkills {
     }
 }
 
+function Install-ClaudeCommands {
+    param(
+        [string]$SourceRoot,
+        [string]$TargetAbs
+    )
+
+    $commandsSourceRoot = Join-Path $SourceRoot "installer-assets/claude-commands"
+    if (-not (Test-Path $commandsSourceRoot)) {
+        throw "Claude command installation failed: missing installer-assets/claude-commands in source."
+    }
+
+    $script:ResolvedClaudeCommandsDir = Join-Path $TargetAbs ".claude/commands"
+
+    try {
+        New-Item -ItemType Directory -Force -Path $script:ResolvedClaudeCommandsDir | Out-Null
+    }
+    catch {
+        throw "Claude command installation failed: unable to create $script:ResolvedClaudeCommandsDir"
+    }
+
+    $script:InstalledCommands = @()
+
+    foreach ($filename in Get-ClaudeCommandFiles) {
+        $src = Join-Path $commandsSourceRoot $filename
+        $dest = Join-Path $script:ResolvedClaudeCommandsDir $filename
+        $commandName = [System.IO.Path]::GetFileNameWithoutExtension($filename)
+
+        if (-not (Test-Path $src)) {
+            throw "Claude command installation failed: missing source command file for $commandName"
+        }
+
+        Copy-Item -Path $src -Destination $dest -Force
+
+        if (-not (Test-Path $dest)) {
+            throw "Claude command installation failed: failed to write $commandName into $script:ResolvedClaudeCommandsDir"
+        }
+
+        $script:InstalledCommands += $commandName
+    }
+
+    if ($script:InstalledCommands.Count -eq 0) {
+        throw "Claude command installation failed: no /sp.* commands were written to $script:ResolvedClaudeCommandsDir"
+    }
+}
+
 try {
     if (-not $PSBoundParameters.ContainsKey("TargetDir") -or [string]::IsNullOrWhiteSpace($TargetDir)) {
         if ($env:SP_INSTALL_TARGET_DIR) {
@@ -239,10 +304,13 @@ try {
         $Ai = $env:SP_INSTALL_AI
     }
 
-    $installCodexSkills = $AiSkills.IsPresent
-    if ((-not $installCodexSkills) -and $env:SP_INSTALL_AI_SKILLS -match '^(?i:1|true|yes|y)$') {
-        $installCodexSkills = $true
+    $aiSkillsRequested = $AiSkills.IsPresent
+    if ((-not $aiSkillsRequested) -and $env:SP_INSTALL_AI_SKILLS -match '^(?i:1|true|yes|y)$') {
+        $aiSkillsRequested = $true
     }
+
+    $installCodexSkills = $false
+    $installClaudeCommands = $false
 
     $autoYes = $Yes.IsPresent
     if ((-not $autoYes) -and $env:SP_INSTALL_AUTO_YES -match '^(?i:1|true|yes|y)$') {
@@ -254,15 +322,19 @@ try {
         exit 0
     }
 
-    if ($Ai -and $Ai -ne "codex") {
-        throw "This installer only supports Codex skills via -Ai codex -AiSkills."
+    if ($Ai -and $Ai -notin @("codex", "claude")) {
+        throw "This installer currently supports only -Ai codex and -Ai claude."
     }
 
-    if ($Ai -eq "codex" -and -not $installCodexSkills) {
-        throw "Codex installation requires -AiSkills. Use -Ai codex -AiSkills."
+    if ($Ai -eq "codex") {
+        $installCodexSkills = $true
     }
 
-    if ($installCodexSkills -and $Ai -ne "codex") {
+    if ($Ai -eq "claude") {
+        $installClaudeCommands = $true
+    }
+
+    if ($aiSkillsRequested -and $Ai -ne "codex") {
         throw "-AiSkills currently requires -Ai codex."
     }
 
@@ -270,12 +342,17 @@ try {
     $sourceRoot = $sourceInfo.Root
     $sourceMode = $sourceInfo.Mode
 
+    New-Item -ItemType Directory -Force -Path $TargetDir | Out-Null
+    $targetAbs = (Resolve-Path $TargetDir).Path
+
     if ($installCodexSkills) {
         Resolve-CodexPaths
     }
 
-    New-Item -ItemType Directory -Force -Path $TargetDir | Out-Null
-    $targetAbs = (Resolve-Path $TargetDir).Path
+    if ($installClaudeCommands) {
+        $script:ResolvedClaudeCommandsDir = Join-Path $targetAbs ".claude/commands"
+    }
+
     $existingCount = Get-ExistingCount -TargetAbs $targetAbs
 
     if (-not $autoYes) {
@@ -300,6 +377,12 @@ try {
             Write-Host "  resolved Codex home: $script:ResolvedCodexHome"
             Write-Host "  resolved skills directory: $script:ResolvedCodexSkillsDir"
         }
+        if ($installClaudeCommands) {
+            Write-Host "  - Claude commands: $(((Get-ClaudeCommandFiles) | ForEach-Object { [System.IO.Path]::GetFileNameWithoutExtension($_) }) -join ', ')"
+            Write-Host ""
+            Write-Host "Claude integration:"
+            Write-Host "  target commands directory: $script:ResolvedClaudeCommandsDir"
+        }
         Write-Host ""
         Write-Host "Managed paths that already exist:"
         Write-Host "  $existingCount"
@@ -321,6 +404,10 @@ try {
 
     if ($installCodexSkills) {
         Install-CodexSkills -SourceRoot $sourceRoot
+    }
+
+    if ($installClaudeCommands) {
+        Install-ClaudeCommands -SourceRoot $sourceRoot -TargetAbs $targetAbs
     }
 
     $version = "unknown"
@@ -352,12 +439,20 @@ try {
         targetDir = $targetAbs
     }
 
+    if ($Ai) {
+        $manifest["ai"] = $Ai
+    }
+
     if ($installCodexSkills) {
-        $manifest["ai"] = "codex"
         $manifest["detectedCodexHome"] = if ($script:DetectedCodexHome) { $script:DetectedCodexHome } else { "" }
         $manifest["codexHome"] = $script:ResolvedCodexHome
         $manifest["codexSkillsDir"] = $script:ResolvedCodexSkillsDir
         $manifest["installedSkills"] = $script:InstalledSkills
+    }
+
+    if ($installClaudeCommands) {
+        $manifest["claudeCommandsDir"] = $script:ResolvedClaudeCommandsDir
+        $manifest["installedCommands"] = $script:InstalledCommands
     }
 
     $manifest | ConvertTo-Json -Depth 4 | Set-Content -Path (Join-Path $manifestDir "install-manifest.json")
@@ -381,11 +476,27 @@ try {
         Write-Host '  $sp-analyze'
         Write-Host "  reload the Codex workspace if the new skills do not appear immediately"
     }
+    elseif ($installClaudeCommands) {
+        Write-Host ""
+        Write-Host "Claude integration:"
+        Write-Host "  target commands directory: $script:ResolvedClaudeCommandsDir"
+        Write-Host "  installed /sp.* commands:"
+        foreach ($command in $script:InstalledCommands) {
+            Write-Host "    - /$command"
+        }
+        Write-Host ""
+        Write-Host "Claude trigger examples:"
+        Write-Host '  /sp.specify'
+        Write-Host '  /sp.analyze'
+        Write-Host "  reload the Claude workspace if the new commands do not appear immediately"
+    }
     else {
         Write-Host ""
-        Write-Host "Codex skills were not installed."
-        Write-Host "To install Codex skills as well, rerun with:"
-        Write-Host "  powershell -ExecutionPolicy Bypass -File .\scripts\install.ps1 -Ai codex -AiSkills $TargetDir"
+        Write-Host "No agent integration was installed."
+        Write-Host "To install Codex skills, rerun with:"
+        Write-Host "  powershell -ExecutionPolicy Bypass -File .\scripts\install.ps1 -Ai codex $TargetDir"
+        Write-Host "To install Claude slash commands, rerun with:"
+        Write-Host "  powershell -ExecutionPolicy Bypass -File .\scripts\install.ps1 -Ai claude $TargetDir"
     }
 
     Write-Host ""
@@ -399,8 +510,11 @@ try {
     if ($installCodexSkills) {
         Write-Host '  3. Reload Codex, then start with $sp-specify'
     }
+    elseif ($installClaudeCommands) {
+        Write-Host '  3. Reload Claude, then start with /sp.specify'
+    }
     else {
-        Write-Host "  3. Start the workflow with sp.specify in your target agent"
+        Write-Host "  3. Install an agent integration, then start with /sp.specify or `$sp-specify"
     }
 }
 finally {

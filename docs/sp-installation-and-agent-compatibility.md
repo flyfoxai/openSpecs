@@ -1,6 +1,6 @@
 # `sp` 安装与 Agent 兼容规范
 
-> 目标：沿用原版 `Spec Kit` 的安装与工作机制，为 `sp` 提供跨平台、跨 agent 的一致接入方式。
+> 目标：尽量参考原版 `Spec Kit` 的安装思路，但在这个 fork 中把用户可见步骤名统一为 `sp.*`，并为不同 agent 提供清晰的接入方式。
 
 ## 1. 设计原则
 
@@ -109,7 +109,7 @@ specify init --here --force --ai claude
 
 ## 4. `sp` 的推荐安装包装
 
-为了对用户暴露 `sp` 而不是 `speckit`，建议 fork 后保留 `specify` CLI 不变，但初始化出的模板内容改成 `sp` 命令族。
+为了降低与 upstream 的偏移，可以保留 `specify` CLI 这一层初始化思路；但在这个 fork 中，对用户暴露的步骤名应统一为 `sp.*`。
 
 推荐模式：
 
@@ -204,7 +204,7 @@ fork 时建议延续原版“按 agent 写入不同命令目录”的方式。
 
 按官方说明，当前至少包括：
 
-- Codex CLI：需要 `--ai-skills`
+- Codex CLI：在 upstream 里可见 `--ai-skills` 这一类 skills 开关
 - Antigravity (`agy`)：需要 `--ai-skills`
 
 其中 Codex 还有额外要求：
@@ -217,7 +217,8 @@ fork 时建议延续原版“按 agent 写入不同命令目录”的方式。
 - 最终 skills 安装目录为 `<codex_home>/skills`
 - 若目录不存在，应主动创建
 - 若目录仍无法解析或不可写，应直接报错
-- 初始化时支持 `--ai codex --ai-skills`
+- 当前 fork 的安装脚本应支持 `--ai codex` 直接进入 Codex 集成模式
+- `--ai-skills` 在当前 fork 中只保留为兼容别名，不应再成为隐藏前提
 - 将命令以 Codex skills 形式安装，并采用 `$sp-*` 调用方式
 - 升级后提醒用户重载 workspace 或重新打开 agent
 
@@ -330,12 +331,12 @@ Claude 兼容应沿用原版 slash command 工作方式：
 
 下面命令主要用于说明调用形态。
 
-除 `codex`、`generic` 与 `--ai-skills` 这类当前已明确依赖的参数外，其余 agent 的准确 `--ai` 值在真实 fork 时必须以上游 `AGENT_CONFIG` 为准。
+除 `codex`、`generic` 这类当前已明确依赖的参数外，其余 agent 的准确 `--ai` 值在真实 fork 时必须以上游 `AGENT_CONFIG` 为准。
 
 推荐：
 
 ```bash
-specify init . --ai codex --ai-skills --script sh
+specify init . --ai codex --script sh
 specify init . --ai claude --script sh
 specify init . --ai gemini --script sh
 specify init . --ai kiro-cli --script sh
@@ -346,7 +347,7 @@ specify init . --ai generic --ai-commands-dir .myagent/commands --script sh
 如果在非空目录初始化：
 
 ```bash
-specify init . --force --ai codex --ai-skills --script sh
+specify init . --force --ai codex --script sh
 specify init . --force --ai claude --script sh
 ```
 
@@ -357,7 +358,7 @@ specify init . --force --ai claude --script sh
 推荐：
 
 ```powershell
-specify init . --ai codex --ai-skills --script ps
+specify init . --ai codex --script ps
 specify init . --ai claude --script ps
 specify init . --ai copilot --script ps
 specify init . --ai kiro-cli --script ps
@@ -368,7 +369,7 @@ specify init . --ai generic --ai-commands-dir .myagent/commands --script ps
 如果在非空目录初始化：
 
 ```powershell
-specify init . --force --ai codex --ai-skills --script ps
+specify init . --force --ai codex --script ps
 specify init . --force --ai claude --script ps
 ```
 
@@ -407,7 +408,7 @@ specify init --here --force --ai <your-agent>
 Codex 升级示例：
 
 ```bash
-specify init --here --force --ai codex --ai-skills
+specify init --here --force --ai codex
 ```
 
 升级约束：

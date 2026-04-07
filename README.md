@@ -1,12 +1,13 @@
-# `sp`
+# `speckit-layered`
 
 `sp` 是一个基于 `Spec Kit` 改造出来的分层文档工作流。
+框架步骤名统一使用 `sp.*`，不同 agent 只是在触发形式上适配。
 
 上游原始仓库：`https://github.com/github/spec-kit`
 
 它的重点不是直接写代码，而是先把需求、业务框架、流程、界面、交付设计和一致性分析按固定步骤沉淀成可查询、可回链、可局部推进的文档骨架，帮助大模型在有限上下文里稳定工作。
 
-当前阶段只覆盖文档工作，流程到 `sp.analyze` 结束，不包含 `sp.implement`。
+当前阶段只覆盖文档工作，流程到 `sp.analyze` 结束，不包含实现阶段。
 
 ## 它解决什么问题
 
@@ -46,7 +47,8 @@
 ```bash
 sh scripts/install.sh
 sh scripts/install.sh ./your-project
-sh scripts/install.sh --ai codex --ai-skills ./your-project
+sh scripts/install.sh --ai codex ./your-project
+sh scripts/install.sh --ai claude ./your-project
 ```
 
 远程一条命令安装：
@@ -60,7 +62,8 @@ Windows 本地安装：
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\scripts\install.ps1
 powershell -ExecutionPolicy Bypass -File .\scripts\install.ps1 .\your-project
-powershell -ExecutionPolicy Bypass -File .\scripts\install.ps1 -Ai codex -AiSkills .\your-project
+powershell -ExecutionPolicy Bypass -File .\scripts\install.ps1 -Ai codex .\your-project
+powershell -ExecutionPolicy Bypass -File .\scripts\install.ps1 -Ai claude .\your-project
 ```
 
 Windows 远程一条命令安装：
@@ -73,9 +76,11 @@ $env:SP_INSTALL_ARCHIVE_URL="https://github.com/flyfoxai/openSpecs/archive/refs/
 
 Codex 集成说明：
 
-- Codex 只使用 skills，触发方式是 `$sp-*`
-- `/sp.*` 只属于 slash-command agents
-- 只有在使用 `--ai codex --ai-skills` 或 `-Ai codex -AiSkills` 时，安装器才会把 `sp-*` skills 写入 Codex skills 目录
+- `sp.specify`、`sp.analyze` 这类名字是框架步骤名
+- Codex 触发方式是 `$sp-*`
+- slash-command agent 触发方式是 `/sp.*`
+- 当前安装器在 `--ai codex` 或 `-Ai codex` 下默认安装 Codex skills
+- 当前安装器在 `--ai claude` 或 `-Ai claude` 下默认安装 Claude slash commands
 - Codex 模式下，“安装成功”必须同时包含项目内模板和实际写入的 `sp-*` skills
 
 ## 适合什么项目
@@ -89,3 +94,4 @@ Codex 集成说明：
 - 中文详细版：[READMEDETAILS.md](READMEDETAILS.md)
 - English short version: [README.en.md](README.en.md)
 - English detailed version: [READMEDETAILS.en.md](READMEDETAILS.en.md)
+- 安装策略目标文档：[docs/sp-agent-install-strategy.md](docs/sp-agent-install-strategy.md)

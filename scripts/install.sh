@@ -10,12 +10,16 @@ TARGET_DIR="${SP_INSTALL_TARGET_DIR:-.}"
 AUTO_YES="${SP_INSTALL_AUTO_YES:-0}"
 AI_TARGET="${SP_INSTALL_AI:-}"
 INSTALL_CODEX_SKILLS="${SP_INSTALL_AI_SKILLS:-0}"
+INSTALL_CLAUDE_COMMANDS=0
 DOWNLOAD_DIR=""
 DETECTED_CODEX_HOME="${CODEX_HOME:-}"
 RESOLVED_CODEX_HOME=""
 RESOLVED_CODEX_SKILLS_DIR=""
 INSTALLED_SKILLS=""
 INSTALLED_SKILLS_JSON=""
+RESOLVED_CLAUDE_COMMANDS_DIR=""
+INSTALLED_COMMANDS=""
+INSTALLED_COMMANDS_JSON=""
 
 cleanup() {
   if [ -n "$DOWNLOAD_DIR" ] && [ -d "$DOWNLOAD_DIR" ]; then
@@ -31,7 +35,8 @@ Usage:
   sh scripts/install.sh [target_dir]
   sh scripts/install.sh --yes [target_dir]
   sh scripts/install.sh --archive-url <tar.gz-url> [target_dir]
-  sh scripts/install.sh --ai codex --ai-skills [target_dir]
+  sh scripts/install.sh --ai codex [target_dir]
+  sh scripts/install.sh --ai claude [target_dir]
 
 Behavior:
   - If target_dir is omitted, install into the current directory.
@@ -39,7 +44,9 @@ Behavior:
   - macOS/Linux local mode copies assets from the current repository.
   - curl|sh mode requires --archive-url or SP_INSTALL_ARCHIVE_URL.
   - Remote mode can also use SP_INSTALL_TARGET_DIR and SP_INSTALL_AUTO_YES.
-  - Codex skills install is enabled only with --ai codex --ai-skills.
+  - --ai codex installs Codex sp-* skills into the Codex skills directory.
+  - --ai claude installs /sp.* slash commands into .claude/commands in the target project.
+  - --ai-skills is kept only as a compatibility alias for Codex mode.
 EOF
 }
 
@@ -76,6 +83,21 @@ sp-bundle
 sp-plan
 sp-tasks
 sp-analyze
+EOF
+}
+
+claude_command_files() {
+  cat <<'EOF'
+sp.constitution.md
+sp.specify.md
+sp.clarify.md
+sp.flow.md
+sp.ui.md
+sp.gate.md
+sp.bundle.md
+sp.plan.md
+sp.tasks.md
+sp.analyze.md
 EOF
 }
 
@@ -223,6 +245,57 @@ $slug"
   fi
 }
 
+install_claude_commands() {
+  COMMAND_SOURCE_ROOT="$SOURCE_ROOT/installer-assets/claude-commands"
+  if [ ! -d "$COMMAND_SOURCE_ROOT" ]; then
+    echo "error: Claude command installation failed: missing installer-assets/claude-commands in source." >&2
+    exit 1
+  fi
+
+  RESOLVED_CLAUDE_COMMANDS_DIR="$TARGET_ABS/.claude/commands"
+
+  if ! mkdir -p "$RESOLVED_CLAUDE_COMMANDS_DIR"; then
+    echo "error: Claude command installation failed: unable to create $RESOLVED_CLAUDE_COMMANDS_DIR" >&2
+    exit 1
+  fi
+
+  INSTALLED_COMMANDS=""
+  INSTALLED_COMMANDS_JSON=""
+
+  for filename in $(claude_command_files); do
+    src="$COMMAND_SOURCE_ROOT/$filename"
+    dest="$RESOLVED_CLAUDE_COMMANDS_DIR/$filename"
+    command_name="${filename%.md}"
+
+    if [ ! -f "$src" ]; then
+      echo "error: Claude command installation failed: missing source command file for $command_name" >&2
+      exit 1
+    fi
+
+    mkdir -p "$(dirname "$dest")"
+    cp "$src" "$dest"
+
+    if [ ! -f "$dest" ]; then
+      echo "error: Claude command installation failed: failed to write $command_name into $RESOLVED_CLAUDE_COMMANDS_DIR" >&2
+      exit 1
+    fi
+
+    if [ -n "$INSTALLED_COMMANDS" ]; then
+      INSTALLED_COMMANDS="$INSTALLED_COMMANDS
+$command_name"
+      INSTALLED_COMMANDS_JSON="$INSTALLED_COMMANDS_JSON, \"$command_name\""
+    else
+      INSTALLED_COMMANDS="$command_name"
+      INSTALLED_COMMANDS_JSON="\"$command_name\""
+    fi
+  done
+
+  if [ -z "$INSTALLED_COMMANDS" ]; then
+    echo "error: Claude command installation failed: no /sp.* commands were written to $RESOLVED_CLAUDE_COMMANDS_DIR" >&2
+    exit 1
+  fi
+}
+
 write_install_manifest() {
   version="$(sed -n 's/.*"version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$SOURCE_ROOT/package.json" | head -n 1)"
   if [ -z "$version" ]; then
@@ -238,12 +311,18 @@ write_install_manifest() {
     echo "  \"installedAt\": \"$(date -u '+%Y-%m-%dT%H:%M:%SZ')\","
     echo "  \"sourceMode\": \"$SOURCE_MODE\","
     echo "  \"targetDir\": \"$TARGET_ABS\""
+    if [ -n "$AI_TARGET" ]; then
+      echo "  ,\"ai\": \"$AI_TARGET\""
+    fi
     if [ "$INSTALL_CODEX_SKILLS" -eq 1 ]; then
-      echo "  ,\"ai\": \"codex\""
       echo "  ,\"detectedCodexHome\": \"${DETECTED_CODEX_HOME:-}\""
       echo "  ,\"codexHome\": \"$RESOLVED_CODEX_HOME\""
       echo "  ,\"codexSkillsDir\": \"$RESOLVED_CODEX_SKILLS_DIR\""
       echo "  ,\"installedSkills\": [$INSTALLED_SKILLS_JSON]"
+    fi
+    if [ "$INSTALL_CLAUDE_COMMANDS" -eq 1 ]; then
+      echo "  ,\"claudeCommandsDir\": \"$RESOLVED_CLAUDE_COMMANDS_DIR\""
+      echo "  ,\"installedCommands\": [$INSTALLED_COMMANDS_JSON]"
     fi
     echo "}"
   } >"$TARGET_ABS/.sp/install-manifest.json"
@@ -283,6 +362,15 @@ Codex integration:
   detected CODEX_HOME: ${DETECTED_CODEX_HOME:-<empty>}
   resolved Codex home: $RESOLVED_CODEX_HOME
   resolved skills directory: $RESOLVED_CODEX_SKILLS_DIR
+EOF
+  fi
+
+  if [ "$INSTALL_CLAUDE_COMMANDS" -eq 1 ]; then
+    cat <<EOF >&3
+  - Claude commands: $(printf '%s' "$INSTALLED_COMMAND_NAMES_PREVIEW")
+
+Claude integration:
+  target commands directory: $RESOLVED_CLAUDE_COMMANDS_DIR
 EOF
   fi
 
@@ -378,14 +466,17 @@ else
   SOURCE_MODE="archive"
 fi
 
-if [ -n "$AI_TARGET" ] && [ "$AI_TARGET" != "codex" ]; then
-  echo "error: this installer only supports Codex skills via --ai codex --ai-skills." >&2
+if [ -n "$AI_TARGET" ] && [ "$AI_TARGET" != "codex" ] && [ "$AI_TARGET" != "claude" ]; then
+  echo "error: this installer currently supports only --ai codex and --ai claude." >&2
   exit 1
 fi
 
-if [ "$AI_TARGET" = "codex" ] && [ "$INSTALL_CODEX_SKILLS" -ne 1 ]; then
-  echo "error: Codex installation requires --ai-skills. Use --ai codex --ai-skills." >&2
-  exit 1
+if [ "$AI_TARGET" = "codex" ]; then
+  INSTALL_CODEX_SKILLS=1
+fi
+
+if [ "$AI_TARGET" = "claude" ]; then
+  INSTALL_CLAUDE_COMMANDS=1
 fi
 
 if [ "$INSTALL_CODEX_SKILLS" -eq 1 ] && [ "$AI_TARGET" != "codex" ]; then
@@ -398,8 +489,16 @@ if [ "$INSTALL_CODEX_SKILLS" -eq 1 ]; then
   INSTALLED_SKILL_NAMES_PREVIEW="$(printf '%s' "$(codex_skill_slugs)" | tr '\n' ' ' | sed 's/[[:space:]][[:space:]]*/ /g; s/[[:space:]]$//')"
 fi
 
+if [ "$INSTALL_CLAUDE_COMMANDS" -eq 1 ]; then
+  RESOLVED_CLAUDE_COMMANDS_DIR="$TARGET_DIR/.claude/commands"
+  INSTALLED_COMMAND_NAMES_PREVIEW="$(printf '%s' "$(claude_command_files)" | sed 's/\.md$//g' | tr '\n' ' ' | sed 's/[[:space:]][[:space:]]*/ /g; s/[[:space:]]$//')"
+fi
+
 mkdir -p "$TARGET_DIR"
 TARGET_ABS="$(abs_path "$TARGET_DIR")"
+if [ "$INSTALL_CLAUDE_COMMANDS" -eq 1 ]; then
+  RESOLVED_CLAUDE_COMMANDS_DIR="$TARGET_ABS/.claude/commands"
+fi
 EXISTING_COUNT="$(count_existing_targets)"
 confirm_install
 
@@ -412,6 +511,10 @@ mkdir -p "$TARGET_ABS/specs"
 
 if [ "$INSTALL_CODEX_SKILLS" -eq 1 ]; then
   install_codex_skills
+fi
+
+if [ "$INSTALL_CLAUDE_COMMANDS" -eq 1 ]; then
+  install_claude_commands
 fi
 
 write_install_manifest
@@ -435,11 +538,27 @@ if [ "$INSTALL_CODEX_SKILLS" -eq 1 ]; then
   echo "  \$sp-specify"
   echo "  \$sp-analyze"
   echo "  reload the Codex workspace if the new skills do not appear immediately"
+elif [ "$INSTALL_CLAUDE_COMMANDS" -eq 1 ]; then
+  echo
+  echo "Claude integration:"
+  echo "  target commands directory: $RESOLVED_CLAUDE_COMMANDS_DIR"
+  echo "  installed /sp.* commands:"
+  printf '%s\n' "$INSTALLED_COMMANDS" | while IFS= read -r command_name; do
+    [ -n "$command_name" ] || continue
+    echo "    - /$command_name"
+  done
+  echo
+  echo "Claude trigger examples:"
+  echo "  /sp.specify"
+  echo "  /sp.analyze"
+  echo "  reload the Claude workspace if the new commands do not appear immediately"
 else
   echo
-  echo "Codex skills were not installed."
-  echo "To install Codex skills as well, rerun with:"
-  echo "  sh scripts/install.sh --ai codex --ai-skills ${TARGET_DIR}"
+  echo "No agent integration was installed."
+  echo "To install Codex skills, rerun with:"
+  echo "  sh scripts/install.sh --ai codex ${TARGET_DIR}"
+  echo "To install Claude slash commands, rerun with:"
+  echo "  sh scripts/install.sh --ai claude ${TARGET_DIR}"
 fi
 
 echo
@@ -452,6 +571,8 @@ echo "  1. Read docs/sp-overview.zh-CN.md or docs/sp-overview.en.md"
 echo "  2. Review .specify/memory/constitution.md"
 if [ "$INSTALL_CODEX_SKILLS" -eq 1 ]; then
   echo "  3. Reload Codex, then start with \$sp-specify"
+elif [ "$INSTALL_CLAUDE_COMMANDS" -eq 1 ]; then
+  echo "  3. Reload Claude, then start with /sp.specify"
 else
-  echo "  3. Start the workflow with sp.specify in your target agent"
+  echo "  3. Install an agent integration, then start with /sp.specify or \$sp-specify"
 fi

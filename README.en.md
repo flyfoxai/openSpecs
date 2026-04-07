@@ -1,12 +1,13 @@
-# `sp`
+# `speckit-layered`
 
 `sp` is a layered documentation workflow adapted from `Spec Kit`.
+The framework step names stay in `sp.*`; each agent only changes how those steps are triggered.
 
 Upstream original repository: `https://github.com/github/spec-kit`
 
 Its goal is not to jump straight from a raw request to code. It first turns a project into a queryable, traceable, incremental documentation skeleton so a model can work on one local area at a time under limited context.
 
-The current phase covers documentation only. The workflow ends at `sp.analyze` and does not include `sp.implement`.
+The current phase covers documentation only. The workflow ends at `sp.analyze` and does not include implementation.
 
 ## What It Solves
 
@@ -46,7 +47,8 @@ Local repository install:
 ```bash
 sh scripts/install.sh
 sh scripts/install.sh ./your-project
-sh scripts/install.sh --ai codex --ai-skills ./your-project
+sh scripts/install.sh --ai codex ./your-project
+sh scripts/install.sh --ai claude ./your-project
 ```
 
 Remote one-command install:
@@ -60,7 +62,8 @@ Windows local install:
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\scripts\install.ps1
 powershell -ExecutionPolicy Bypass -File .\scripts\install.ps1 .\your-project
-powershell -ExecutionPolicy Bypass -File .\scripts\install.ps1 -Ai codex -AiSkills .\your-project
+powershell -ExecutionPolicy Bypass -File .\scripts\install.ps1 -Ai codex .\your-project
+powershell -ExecutionPolicy Bypass -File .\scripts\install.ps1 -Ai claude .\your-project
 ```
 
 Windows remote one-command install:
@@ -73,9 +76,11 @@ If no directory is provided, installation defaults to the current directory. Con
 
 Codex integration notes:
 
-- Codex uses skills only, with `$sp-*` triggers
-- `/sp.*` belongs only to slash-command agents
-- The installer writes `sp-*` skills into the Codex skills directory only when `--ai codex --ai-skills` or `-Ai codex -AiSkills` is used
+- `sp.specify` and `sp.analyze` are framework step names
+- Codex uses `$sp-*` triggers
+- slash-command agents use `/sp.*`
+- The installer installs Codex skills by default when `--ai codex` or `-Ai codex` is used
+- The installer installs Claude slash commands by default when `--ai claude` or `-Ai claude` is used
 - In Codex mode, installation is successful only when both project templates and actual `sp-*` skills are written
 
 ## Best Fit
@@ -89,3 +94,4 @@ Less useful for very small tools with only a few pages and simple rules.
 - Chinese short version: [README.md](README.md)
 - Chinese detailed version: [READMEDETAILS.md](READMEDETAILS.md)
 - English detailed version: [READMEDETAILS.en.md](READMEDETAILS.en.md)
+- Installation strategy target doc: [docs/sp-agent-install-strategy.md](docs/sp-agent-install-strategy.md)

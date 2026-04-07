@@ -1,10 +1,11 @@
-# `sp`
+# `speckit-layered`
 
 `sp` is a layered documentation workflow adapted from `Spec Kit`.
+The framework step names stay in `sp.*`; each agent only changes how those steps are triggered.
 
 Its goal is not to jump straight to code. It first builds a queryable, traceable, incremental documentation skeleton so a model can work on one bounded area at a time under limited context.
 
-The current phase covers documentation only. The workflow ends at `sp.analyze` and does not include `sp.implement`.
+The current phase covers documentation only. The workflow ends at `sp.analyze` and does not include implementation.
 
 ## Core Ideas
 
