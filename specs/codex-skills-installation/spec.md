@@ -24,7 +24,7 @@
 ## In Scope
 
 - `scripts/install.ps1` 的 Codex 模式入口与行为
-- `-Ai codex -AiSkills` 的模式约束与错误提示
+- `-Ai codex` 默认安装 skills，以及 `-AiSkills` 兼容别名的约束与错误提示
 - Windows 下 `CODEX_HOME` 与默认 `.codex` 目录解析
 - Codex skills 目录创建、写入校验与失败判定
 - 安装输出、manifest 字段、trigger 示例与 next steps 文案
@@ -47,7 +47,7 @@
 ## Success Criteria
 
 - starter-pack-only 模式必须明确说明未安装 Codex skills
-- Codex 模式必须要求 `-Ai codex -AiSkills`
+- Codex 模式必须在 `-Ai codex` 下默认安装 skills，`-AiSkills` 仅作为兼容别名保留
 - 当 `CODEX_HOME` 为空时，Windows 必须回退到 `%USERPROFILE%\.codex`
 - 最终 skills 目录必须解析为 `<codex_home>\skills`
 - 若 skills 目录不存在，安装器必须自动创建

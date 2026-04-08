@@ -10,7 +10,7 @@
 
 - `spec.md` 已把 Windows 下的核心缺口、成功标准、失败标准和触发方式区分清楚
 - 当前仓库文档对 Codex 的定义一致：Codex 使用 `$sp-*`，slash-command agents 使用 `/sp.*`
-- 当前 `scripts/install.ps1` 已包含 `-Ai codex -AiSkills`、`CODEX_HOME` 回退、skills 目录创建、`sp-*` 写入校验和 post-install 输出
+- 当前 `scripts/install.ps1` 已包含 `-Ai codex` 默认安装 skills、`CODEX_HOME` 回退、skills 目录创建、`sp-*` 写入校验和 post-install 输出
 - 当前 `scripts/install.sh` 与 PowerShell 版本在 Codex 模式下保持同样的成功条件和触发文案
 - 当前 manifest 结构已支持在 Codex 模式下记录 `ai`、`codexHome`、`codexSkillsDir` 和 `installedSkills`
 

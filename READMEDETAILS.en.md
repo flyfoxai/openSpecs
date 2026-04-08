@@ -283,14 +283,14 @@ Notes:
 If you want to install Codex skills as part of the starter pack, enable Codex mode explicitly:
 
 ```bash
-sh scripts/install.sh --ai codex --ai-skills ./your-project
+sh scripts/install.sh --ai codex ./your-project
 ```
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\install.ps1 -Ai codex -AiSkills .\your-project
+powershell -ExecutionPolicy Bypass -File .\scripts\install.ps1 -Ai codex .\your-project
 ```
 
-In that mode, the installer now prints:
+In `--ai codex` / `-Ai codex` mode, the installer writes Codex skills by default. `--ai-skills` / `-AiSkills` is kept only as a compatibility alias, not as a hidden prerequisite. In that mode, the installer now prints:
 
 - detected `CODEX_HOME`
 - the resolved Codex home and skills directory

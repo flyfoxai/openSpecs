@@ -283,14 +283,14 @@ $env:SP_INSTALL_ARCHIVE_URL="https://github.com/flyfoxai/openSpecs/archive/refs/
 如果当前要给 Codex 安装 skills，需要显式启用 Codex 模式：
 
 ```bash
-sh scripts/install.sh --ai codex --ai-skills ./your-project
+sh scripts/install.sh --ai codex ./your-project
 ```
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\install.ps1 -Ai codex -AiSkills .\your-project
+powershell -ExecutionPolicy Bypass -File .\scripts\install.ps1 -Ai codex .\your-project
 ```
 
-当前仓库里的 starter pack 安装器只有在上述模式下才会尝试写入 Codex skills 目录，并在结束时打印：
+当前仓库里的 starter pack 安装器会在 `--ai codex` / `-Ai codex` 模式下尝试写入 Codex skills 目录。`--ai-skills` / `-AiSkills` 只保留为兼容别名，不再是隐藏前提。安装结束时会打印：
 
 - 检测到的 `CODEX_HOME`
 - 最终使用的 Codex home 与 skills 目录

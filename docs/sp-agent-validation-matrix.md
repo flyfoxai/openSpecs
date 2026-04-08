@@ -44,7 +44,7 @@
 | Agent | 类型 | 初始化命令模式 | 触发方式 | 安装落位 | 刷新要求 | 核心检查点 |
 | --- | --- | --- | --- | --- | --- | --- |
 | Claude Code | slash command | `specify init . --ai <agent-id-from-upstream> --script <sh-or-ps>` | `/sp.*` | Claude 命令目录 | 通常需要刷新工作区 | 命令可见、active feature 可读、输出落到 `specs/<feature>/` |
-| Codex CLI | skills | `specify init . --ai codex --ai-skills --script <sh-or-ps>` | `$sp-*` | Codex skills 目录 | 通常需要 reload workspace | `CODEX_HOME` 可用、skills 已安装、命令名与文件名一致 |
+| Codex CLI | skills | `specify init . --ai codex --script <sh-or-ps>` | `$sp-*` | Codex skills 目录 | 通常需要 reload workspace | `CODEX_HOME` 可用、skills 已安装、命令名与文件名一致；`--ai-skills` 仅作兼容别名 |
 | Gemini CLI | slash command | `specify init . --ai <agent-id-from-upstream> --script <sh-or-ps>` | `/sp.*` | Gemini 命令目录 | 通常需要刷新命令缓存 | slash command 可见、文档输出完整 |
 | Kiro CLI | slash command | `specify init . --ai <agent-id-from-upstream> --script <sh-or-ps>` | `/sp.*` | Kiro 命令目录 | 通常需要刷新工作区 | 命令目录写入正确、`sp.flow` 和 `sp.ui` 可触发 |
 | Windsurf | slash command | `specify init . --ai <agent-id-from-upstream> --script <sh-or-ps>` | `/sp.*` | Windsurf 命令目录 | 通常需要 reload | 命令注册成功、`sp.gate` 和 `sp.bundle` 输出正确 |

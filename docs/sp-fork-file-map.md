@@ -212,7 +212,8 @@
 
 额外要求：
 
-- 初始化时支持 `--ai codex --ai-skills`
+- 初始化时支持 `--ai codex` 默认安装 skills
+- `--ai-skills` 可保留为兼容别名，但不应再成为隐藏前提
 - 兼容 `CODEX_HOME`
 - 升级后提醒重载 workspace
 
@@ -286,14 +287,14 @@ macOS / Linux：
 - 默认使用 `sh`
 - 初始化建议：
   - `specify init . --ai claude --script sh`
-  - `specify init . --ai codex --ai-skills --script sh`
+  - `specify init . --ai codex --script sh`
 
 Windows：
 
 - 默认使用 `ps`
 - 初始化建议：
   - `specify init . --ai claude --script ps`
-  - `specify init . --ai codex --ai-skills --script ps`
+  - `specify init . --ai codex --script ps`
 
 ## 8. 当前设计成果与未来落位的对应关系
 

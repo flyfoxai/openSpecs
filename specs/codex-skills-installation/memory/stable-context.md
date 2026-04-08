@@ -26,7 +26,7 @@
 | Mode ID | Mode | Required Flags | Expected Outcome | Wrong Assumption To Avoid |
 | --- | --- | --- | --- | --- |
 | `MODE-SP-ONLY` | starter pack only | none | project docs, layers, `.specify/memory`, `specs`, manifest | do not treat this as Codex integration |
-| `MODE-CODEX` | starter pack plus Codex skills | `-Ai codex -AiSkills` or `--ai codex --ai-skills` | project assets plus `sp-*` skills written into Codex skills directory | do not test `/sp.*` in Codex |
+| `MODE-CODEX` | starter pack plus Codex skills | `-Ai codex` or `--ai codex` (`-AiSkills` / `--ai-skills` only as compatibility alias) | project assets plus `sp-*` skills written into Codex skills directory | do not test `/sp.*` in Codex |
 
 ## Trigger Lookup
 
