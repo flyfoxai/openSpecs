@@ -54,7 +54,11 @@ sh scripts/install.sh --ai claude ./your-project
 Remote one-command install:
 
 ```bash
+# Starter pack only
 curl -fsSL https://raw.githubusercontent.com/flyfoxai/openSpecs/main/scripts/install.sh | sh -s -- --archive-url https://github.com/flyfoxai/openSpecs/archive/refs/heads/main.tar.gz ./your-project
+
+# Starter pack + Codex integration
+SP_INSTALL_AI=codex curl -fsSL https://raw.githubusercontent.com/flyfoxai/openSpecs/main/scripts/install.sh | sh -s -- --archive-url https://github.com/flyfoxai/openSpecs/archive/refs/heads/main.tar.gz ./your-project
 ```
 
 Windows local install:
@@ -69,7 +73,11 @@ powershell -ExecutionPolicy Bypass -File .\scripts\install.ps1 -Ai claude .\your
 Windows remote one-command install:
 
 ```powershell
+# Starter pack only
 $env:SP_INSTALL_ARCHIVE_URL="https://github.com/flyfoxai/openSpecs/archive/refs/heads/main.zip"; $env:SP_INSTALL_TARGET_DIR="C:\path\to\your-project"; irm https://raw.githubusercontent.com/flyfoxai/openSpecs/main/scripts/install.ps1 | iex
+
+# Starter pack + Codex integration
+$env:SP_INSTALL_ARCHIVE_URL="https://github.com/flyfoxai/openSpecs/archive/refs/heads/main.zip"; $env:SP_INSTALL_TARGET_DIR="C:\path\to\your-project"; $env:SP_INSTALL_AI="codex"; irm https://raw.githubusercontent.com/flyfoxai/openSpecs/main/scripts/install.ps1 | iex
 ```
 
 If no directory is provided, installation defaults to the current directory. Confirmation is required by default unless `--yes`, `-Yes`, or an explicit environment override is used.
@@ -79,7 +87,9 @@ Codex integration notes:
 - `sp.specify` and `sp.analyze` are framework step names
 - Codex uses `$sp-*` triggers
 - slash-command agents use `/sp.*`
+- Starter-pack-only installs do not write Codex skills
 - The installer installs Codex skills by default when `--ai codex` or `-Ai codex` is used
+- The remote one-command Codex path uses `SP_INSTALL_AI=codex`
 - The installer installs Claude slash commands by default when `--ai claude` or `-Ai claude` is used
 - In Codex mode, installation is successful only when both project templates and actual `sp-*` skills are written
 

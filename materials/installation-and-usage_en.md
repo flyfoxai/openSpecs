@@ -31,12 +31,20 @@ It automatically detects the environment variable `CODEX_HOME`. If not set, it d
 **Mac/Linux:**
 ```bash
 sh scripts/install.sh --ai codex ./your-project-path
+
+# Remote one-command install
+SP_INSTALL_AI=codex curl -fsSL https://raw.githubusercontent.com/flyfoxai/openSpecs/main/scripts/install.sh | sh -s -- --archive-url https://github.com/flyfoxai/openSpecs/archive/refs/heads/main.tar.gz ./your-project-path
 ```
 
 **Windows (PowerShell):**
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\scripts\install.ps1 -Ai codex .\your-project-path
+
+# Remote one-command install
+$env:SP_INSTALL_ARCHIVE_URL="https://github.com/flyfoxai/openSpecs/archive/refs/heads/main.zip"; $env:SP_INSTALL_TARGET_DIR="C:\path\to\your-project-path"; $env:SP_INSTALL_AI="codex"; irm https://raw.githubusercontent.com/flyfoxai/openSpecs/main/scripts/install.ps1 | iex
 ```
+
+If you do not pass `--ai codex` or `SP_INSTALL_AI=codex`, the installer only writes the starter pack and does not install `sp-*` skills into Codex.
 
 ---
 

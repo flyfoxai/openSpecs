@@ -257,7 +257,11 @@ sh scripts/install.sh ./your-project
 远程一条命令：
 
 ```bash
+# 默认仅安装 starter pack
 curl -fsSL https://raw.githubusercontent.com/flyfoxai/openSpecs/main/scripts/install.sh | sh -s -- --archive-url https://github.com/flyfoxai/openSpecs/archive/refs/heads/main.tar.gz ./your-project
+
+# 安装 starter pack + Codex integration
+SP_INSTALL_AI=codex curl -fsSL https://raw.githubusercontent.com/flyfoxai/openSpecs/main/scripts/install.sh | sh -s -- --archive-url https://github.com/flyfoxai/openSpecs/archive/refs/heads/main.tar.gz ./your-project
 ```
 
 Windows 本地执行：
@@ -270,7 +274,11 @@ powershell -ExecutionPolicy Bypass -File .\scripts\install.ps1 .\your-project
 Windows 远程一条命令：
 
 ```powershell
+# 默认仅安装 starter pack
 $env:SP_INSTALL_ARCHIVE_URL="https://github.com/flyfoxai/openSpecs/archive/refs/heads/main.zip"; $env:SP_INSTALL_TARGET_DIR="C:\path\to\your-project"; irm https://raw.githubusercontent.com/flyfoxai/openSpecs/main/scripts/install.ps1 | iex
+
+# 安装 starter pack + Codex integration
+$env:SP_INSTALL_ARCHIVE_URL="https://github.com/flyfoxai/openSpecs/archive/refs/heads/main.zip"; $env:SP_INSTALL_TARGET_DIR="C:\path\to\your-project"; $env:SP_INSTALL_AI="codex"; irm https://raw.githubusercontent.com/flyfoxai/openSpecs/main/scripts/install.ps1 | iex
 ```
 
 说明：
@@ -278,7 +286,8 @@ $env:SP_INSTALL_ARCHIVE_URL="https://github.com/flyfoxai/openSpecs/archive/refs/
 - 不传目录时默认安装到当前目录
 - 安装前默认要求确认
 - `curl | sh` 场景支持通过 `--archive-url` 与可选目标目录传参
-- `irm | iex` 场景通过 `SP_INSTALL_ARCHIVE_URL`、`SP_INSTALL_TARGET_DIR`、`SP_INSTALL_AUTO_YES` 传参
+- `irm | iex` 场景通过 `SP_INSTALL_ARCHIVE_URL`、`SP_INSTALL_TARGET_DIR`、`SP_INSTALL_AI`、`SP_INSTALL_AUTO_YES` 传参
+- 不带 `--ai codex` 或 `SP_INSTALL_AI=codex` 时，安装器只落地 starter pack，不会写入 Codex skills
 
 如果当前要给 Codex 安装 skills，需要显式启用 Codex 模式：
 

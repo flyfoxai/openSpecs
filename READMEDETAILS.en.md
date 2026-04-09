@@ -257,7 +257,11 @@ sh scripts/install.sh ./your-project
 Remote one-command install:
 
 ```bash
+# Starter pack only
 curl -fsSL https://raw.githubusercontent.com/flyfoxai/openSpecs/main/scripts/install.sh | sh -s -- --archive-url https://github.com/flyfoxai/openSpecs/archive/refs/heads/main.tar.gz ./your-project
+
+# Starter pack + Codex integration
+SP_INSTALL_AI=codex curl -fsSL https://raw.githubusercontent.com/flyfoxai/openSpecs/main/scripts/install.sh | sh -s -- --archive-url https://github.com/flyfoxai/openSpecs/archive/refs/heads/main.tar.gz ./your-project
 ```
 
 Windows local execution:
@@ -270,7 +274,11 @@ powershell -ExecutionPolicy Bypass -File .\scripts\install.ps1 .\your-project
 Windows remote one-command install:
 
 ```powershell
+# Starter pack only
 $env:SP_INSTALL_ARCHIVE_URL="https://github.com/flyfoxai/openSpecs/archive/refs/heads/main.zip"; $env:SP_INSTALL_TARGET_DIR="C:\path\to\your-project"; irm https://raw.githubusercontent.com/flyfoxai/openSpecs/main/scripts/install.ps1 | iex
+
+# Starter pack + Codex integration
+$env:SP_INSTALL_ARCHIVE_URL="https://github.com/flyfoxai/openSpecs/archive/refs/heads/main.zip"; $env:SP_INSTALL_TARGET_DIR="C:\path\to\your-project"; $env:SP_INSTALL_AI="codex"; irm https://raw.githubusercontent.com/flyfoxai/openSpecs/main/scripts/install.ps1 | iex
 ```
 
 Notes:
@@ -278,7 +286,8 @@ Notes:
 - If no directory is passed, installation defaults to the current directory
 - Confirmation is required by default
 - `curl | sh` mode accepts `--archive-url` and an optional target directory
-- `irm | iex` mode uses `SP_INSTALL_ARCHIVE_URL`, `SP_INSTALL_TARGET_DIR`, and `SP_INSTALL_AUTO_YES`
+- `irm | iex` mode uses `SP_INSTALL_ARCHIVE_URL`, `SP_INSTALL_TARGET_DIR`, `SP_INSTALL_AI`, and `SP_INSTALL_AUTO_YES`
+- Without `--ai codex` or `SP_INSTALL_AI=codex`, the installer only writes the starter pack and does not install Codex skills
 
 If you want to install Codex skills as part of the starter pack, enable Codex mode explicitly:
 

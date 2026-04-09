@@ -75,14 +75,22 @@ powershell -ExecutionPolicy Bypass -File .\scripts\install.ps1 -Ai codex .\your-
 ### Remote One-Line Install (No clone required)
 **Mac/Linux:**
 ```bash
+# Starter pack only
 curl -fsSL https://raw.githubusercontent.com/flyfoxai/openSpecs/main/scripts/install.sh | sh -s -- --archive-url https://github.com/flyfoxai/openSpecs/archive/refs/heads/main.tar.gz ./your-project
+
+# Starter pack + Codex integration
+SP_INSTALL_AI=codex curl -fsSL https://raw.githubusercontent.com/flyfoxai/openSpecs/main/scripts/install.sh | sh -s -- --archive-url https://github.com/flyfoxai/openSpecs/archive/refs/heads/main.tar.gz ./your-project
 ```
 **Windows:**
 ```powershell
+# Starter pack only
 $env:SP_INSTALL_ARCHIVE_URL="https://github.com/flyfoxai/openSpecs/archive/refs/heads/main.zip"; $env:SP_INSTALL_TARGET_DIR="C:\path\to\your-project"; irm https://raw.githubusercontent.com/flyfoxai/openSpecs/main/scripts/install.ps1 | iex
+
+# Starter pack + Codex integration
+$env:SP_INSTALL_ARCHIVE_URL="https://github.com/flyfoxai/openSpecs/archive/refs/heads/main.zip"; $env:SP_INSTALL_TARGET_DIR="C:\path\to\your-project"; $env:SP_INSTALL_AI="codex"; irm https://raw.githubusercontent.com/flyfoxai/openSpecs/main/scripts/install.ps1 | iex
 ```
 
-> *Note: In Codex mode (`--ai codex`), the installer will default to checking `CODEX_HOME` or use the default `.codex/skills` directory to write skills directly to disk.*
+> *Note: Default install only writes the starter pack. Only in Codex mode (`--ai codex` or `SP_INSTALL_AI=codex`) will the installer resolve `CODEX_HOME` or fall back to the default `.codex/skills` directory and actually write the `sp-*` skills.*
 
 ---
 

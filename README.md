@@ -75,14 +75,22 @@ powershell -ExecutionPolicy Bypass -File .\scripts\install.ps1 -Ai codex .\your-
 ### 远程一键安装 (无需 clone 仓库)
 **Mac/Linux:**
 ```bash
+# 默认仅安装 starter pack
 curl -fsSL https://raw.githubusercontent.com/flyfoxai/openSpecs/main/scripts/install.sh | sh -s -- --archive-url https://github.com/flyfoxai/openSpecs/archive/refs/heads/main.tar.gz ./your-project
+
+# 安装 starter pack + Codex integration
+SP_INSTALL_AI=codex curl -fsSL https://raw.githubusercontent.com/flyfoxai/openSpecs/main/scripts/install.sh | sh -s -- --archive-url https://github.com/flyfoxai/openSpecs/archive/refs/heads/main.tar.gz ./your-project
 ```
 **Windows:**
 ```powershell
+# 默认仅安装 starter pack
 $env:SP_INSTALL_ARCHIVE_URL="https://github.com/flyfoxai/openSpecs/archive/refs/heads/main.zip"; $env:SP_INSTALL_TARGET_DIR="C:\path\to\your-project"; irm https://raw.githubusercontent.com/flyfoxai/openSpecs/main/scripts/install.ps1 | iex
+
+# 安装 starter pack + Codex integration
+$env:SP_INSTALL_ARCHIVE_URL="https://github.com/flyfoxai/openSpecs/archive/refs/heads/main.zip"; $env:SP_INSTALL_TARGET_DIR="C:\path\to\your-project"; $env:SP_INSTALL_AI="codex"; irm https://raw.githubusercontent.com/flyfoxai/openSpecs/main/scripts/install.ps1 | iex
 ```
 
-> *注：Codex 模式下（`--ai codex`），安装器默认会检测 `CODEX_HOME` 或使用默认 `.codex/skills` 目录，将技能直接落盘。*
+> *注：默认安装只会落地 starter pack。只有在 Codex 模式下（`--ai codex` 或 `SP_INSTALL_AI=codex`），安装器才会检测 `CODEX_HOME` 或回退到默认 `.codex/skills` 目录，并把 `sp-*` skills 真正写进去。*
 
 ---
 
