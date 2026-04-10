@@ -92,7 +92,7 @@ Codex integration notes:
 - The installer installs Codex Desktop prompts and Codex skills by default when `--ai codex` or `-Ai codex` is used
 - The remote one-command Codex path uses `SP_INSTALL_AI=codex`
 - The installer installs Claude slash commands by default when `--ai claude` or `-Ai claude` is used
-- In Codex mode, installation is successful only when project templates, `/prompts:sp.*` command files, and actual `sp-*` skills are written
+- In Codex mode, installation is successful only when project templates are written, `/prompts:sp.*` files exist in `CODEX_HOME/prompts`, mirrored copies exist in `CODEX_HOME/commands`, and actual `sp-*` skills are written
 
 ## Best Fit
 

@@ -299,13 +299,14 @@ sh scripts/install.sh --ai codex ./your-project
 powershell -ExecutionPolicy Bypass -File .\scripts\install.ps1 -Ai codex .\your-project
 ```
 
-当前仓库里的 starter pack 安装器会在 `--ai codex` / `-Ai codex` 模式下尝试写入 Codex Desktop commands 目录与 Codex skills 目录。`--ai-skills` / `-AiSkills` 只保留为兼容别名，不再是隐藏前提。安装结束时会打印：
+当前仓库里的 starter pack 安装器会在 `--ai codex` / `-Ai codex` 模式下优先写入 Codex Desktop 的 `prompts` 目录，并同步镜像到 `commands` 兼容目录，同时安装 Codex skills。`--ai-skills` / `-AiSkills` 只保留为兼容别名，不再是隐藏前提。安装结束时会打印：
 
 - 检测到的 `CODEX_HOME`
-- 最终使用的 Codex home、commands 目录与 skills 目录
-- 已安装的 `/prompts:sp.*` 命令列表
+- 最终使用的 Codex home、prompts 主目录、commands 兼容目录与 skills 目录
+- 已安装到 `prompts` 的 `/prompts:sp.*` 命令列表
+- 已镜像到 `commands` 的 `/prompts:sp.*` 命令列表
 - 已安装的 `sp-*` skills 列表
-- 清理掉的旧 `/prompts:speckit.*` 命令列表（如果有）
+- 从 `prompts` 与 `commands` 中清理掉的旧 `/prompts:speckit.*` 命令列表（如果有）
 - 可直接触发的示例，例如 `/prompts:sp.specify`、`$sp-specify`
 
 安装完成后，你可以直接用这套文档规范和样例推进设计工作：

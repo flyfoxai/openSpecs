@@ -16,9 +16,12 @@ $ErrorActionPreference = "Stop"
 $script:DownloadDir = $null
 $script:ResolvedCodexHome = $null
 $script:ResolvedCodexSkillsDir = $null
+$script:ResolvedCodexPromptsDir = $null
 $script:ResolvedCodexCommandsDir = $null
 $script:InstalledSkills = @()
+$script:InstalledCodexPrompts = @()
 $script:InstalledCodexCommands = @()
+$script:RemovedLegacyCodexPrompts = @()
 $script:RemovedLegacyCodexCommands = @()
 $script:DetectedCodexHome = $env:CODEX_HOME
 $script:ResolvedClaudeCommandsDir = $null
@@ -45,7 +48,7 @@ Behavior:
   - Windows local mode copies assets from the current repository.
   - iwr|iex mode requires -ArchiveUrl or SP_INSTALL_ARCHIVE_URL.
   - Remote mode can also use SP_INSTALL_TARGET_DIR and SP_INSTALL_AUTO_YES.
-  - -Ai codex installs Codex sp-* skills and Codex Desktop /prompts:sp.* commands.
+  - -Ai codex installs Codex sp-* skills, primary Codex Desktop /prompts:sp.* prompts, and a compatibility commands mirror.
   - -Ai claude installs /sp.* slash commands into .claude/commands in the target project.
   - -AiSkills is kept only as a compatibility alias for Codex mode.
 "@
@@ -206,6 +209,7 @@ function Resolve-CodexPaths {
     }
 
     $script:ResolvedCodexSkillsDir = Join-Path $script:ResolvedCodexHome "skills"
+    $script:ResolvedCodexPromptsDir = Join-Path $script:ResolvedCodexHome "prompts"
     $script:ResolvedCodexCommandsDir = Join-Path $script:ResolvedCodexHome "commands"
     if (-not $script:ResolvedCodexSkillsDir) {
         throw "Codex skills installation failed: resolved skills directory missing or empty."
@@ -311,25 +315,43 @@ function Install-CodexCommands {
 
     $commandsSourceRoot = Join-Path $SourceRoot "installer-assets/claude-commands"
     if (-not (Test-Path $commandsSourceRoot)) {
-        throw "Codex Desktop command installation failed: missing installer-assets/claude-commands in source."
+        throw "Codex Desktop prompt installation failed: missing installer-assets/claude-commands in source."
+    }
+
+    try {
+        New-Item -ItemType Directory -Force -Path $script:ResolvedCodexPromptsDir | Out-Null
+    }
+    catch {
+        throw "Codex Desktop prompt installation failed: resolved prompts directory missing or unwritable: $script:ResolvedCodexPromptsDir"
     }
 
     try {
         New-Item -ItemType Directory -Force -Path $script:ResolvedCodexCommandsDir | Out-Null
     }
     catch {
-        throw "Codex Desktop command installation failed: resolved commands directory missing or unwritable: $script:ResolvedCodexCommandsDir"
+        throw "Codex Desktop prompt installation failed: compatibility commands directory missing or unwritable: $script:ResolvedCodexCommandsDir"
     }
 
+    $script:InstalledCodexPrompts = @()
     $script:InstalledCodexCommands = @()
+    $script:RemovedLegacyCodexPrompts = @()
     $script:RemovedLegacyCodexCommands = @()
 
     foreach ($filename in Get-LegacyCodexCommandFiles) {
+        $legacyPromptPath = Join-Path $script:ResolvedCodexPromptsDir $filename
+        if (Test-Path $legacyPromptPath) {
+            Remove-Item -Force $legacyPromptPath
+            if (Test-Path $legacyPromptPath) {
+                throw "Codex Desktop prompt installation failed: unable to remove legacy command $filename from $script:ResolvedCodexPromptsDir"
+            }
+            $script:RemovedLegacyCodexPrompts += [System.IO.Path]::GetFileNameWithoutExtension($filename)
+        }
+
         $legacyPath = Join-Path $script:ResolvedCodexCommandsDir $filename
         if (Test-Path $legacyPath) {
             Remove-Item -Force $legacyPath
             if (Test-Path $legacyPath) {
-                throw "Codex Desktop command installation failed: unable to remove legacy command $filename from $script:ResolvedCodexCommandsDir"
+                throw "Codex Desktop prompt installation failed: unable to remove legacy command $filename from $script:ResolvedCodexCommandsDir"
             }
             $script:RemovedLegacyCodexCommands += [System.IO.Path]::GetFileNameWithoutExtension($filename)
         }
@@ -337,26 +359,38 @@ function Install-CodexCommands {
 
     foreach ($filename in Get-SpCommandFiles) {
         $src = Join-Path $commandsSourceRoot $filename
-        $dest = Join-Path $script:ResolvedCodexCommandsDir $filename
+        $promptDest = Join-Path $script:ResolvedCodexPromptsDir $filename
+        $commandDest = Join-Path $script:ResolvedCodexCommandsDir $filename
         $commandName = [System.IO.Path]::GetFileNameWithoutExtension($filename)
 
         if (-not (Test-Path $src)) {
-            throw "Codex Desktop command installation failed: missing source command file for $commandName"
+            throw "Codex Desktop prompt installation failed: missing source command file for $commandName"
         }
 
         $content = Get-Content -Raw -Path $src
         $content = $content -replace '/sp\.', '/prompts:sp.'
-        Set-Content -Path $dest -Value $content -Encoding utf8
+        Set-Content -Path $promptDest -Value $content -Encoding utf8
 
-        if (-not (Test-Path $dest)) {
-            throw "Codex Desktop command installation failed: failed to write $commandName into $script:ResolvedCodexCommandsDir"
+        if (-not (Test-Path $promptDest)) {
+            throw "Codex Desktop prompt installation failed: failed to write $commandName into $script:ResolvedCodexPromptsDir"
         }
 
+        Set-Content -Path $commandDest -Value $content -Encoding utf8
+
+        if (-not (Test-Path $commandDest)) {
+            throw "Codex Desktop prompt installation failed: failed to mirror $commandName into $script:ResolvedCodexCommandsDir"
+        }
+
+        $script:InstalledCodexPrompts += $commandName
         $script:InstalledCodexCommands += $commandName
     }
 
+    if ($script:InstalledCodexPrompts.Count -eq 0) {
+        throw "Codex Desktop prompt installation failed: no /prompts:sp.* commands were written to $script:ResolvedCodexPromptsDir"
+    }
+
     if ($script:InstalledCodexCommands.Count -eq 0) {
-        throw "Codex Desktop command installation failed: no /prompts:sp.* commands were written to $script:ResolvedCodexCommandsDir"
+        throw "Codex Desktop prompt installation failed: no mirrored /prompts:sp.* commands were written to $script:ResolvedCodexCommandsDir"
     }
 }
 
@@ -451,7 +485,8 @@ try {
             Write-Host "  detected CODEX_HOME: $(if ($script:DetectedCodexHome) { $script:DetectedCodexHome } else { '<empty>' })"
             Write-Host "  resolved Codex home: $script:ResolvedCodexHome"
             Write-Host "  resolved skills directory: $script:ResolvedCodexSkillsDir"
-            Write-Host "  resolved commands directory: $script:ResolvedCodexCommandsDir"
+            Write-Host "  resolved prompts directory: $script:ResolvedCodexPromptsDir"
+            Write-Host "  compatibility commands directory: $script:ResolvedCodexCommandsDir"
         }
         if ($installClaudeCommands) {
             Write-Host "  - Claude commands: $(((Get-SpCommandFiles) | ForEach-Object { [System.IO.Path]::GetFileNameWithoutExtension($_) }) -join ', ')"
@@ -524,9 +559,14 @@ try {
         $manifest["detectedCodexHome"] = if ($script:DetectedCodexHome) { $script:DetectedCodexHome } else { "" }
         $manifest["codexHome"] = $script:ResolvedCodexHome
         $manifest["codexSkillsDir"] = $script:ResolvedCodexSkillsDir
+        $manifest["codexPromptsDir"] = $script:ResolvedCodexPromptsDir
         $manifest["codexCommandsDir"] = $script:ResolvedCodexCommandsDir
         $manifest["installedSkills"] = $script:InstalledSkills
+        $manifest["installedCodexPrompts"] = $script:InstalledCodexPrompts
         $manifest["installedCodexCommands"] = $script:InstalledCodexCommands
+        if ($script:RemovedLegacyCodexPrompts.Count -gt 0) {
+            $manifest["removedLegacyCodexPrompts"] = $script:RemovedLegacyCodexPrompts
+        }
         if ($script:RemovedLegacyCodexCommands.Count -gt 0) {
             $manifest["removedLegacyCodexCommands"] = $script:RemovedLegacyCodexCommands
         }
@@ -548,17 +588,28 @@ try {
         Write-Host "  detected CODEX_HOME: $(if ($script:DetectedCodexHome) { $script:DetectedCodexHome } else { '<empty>' })"
         Write-Host "  resolved Codex home: $script:ResolvedCodexHome"
         Write-Host "  resolved skills directory: $script:ResolvedCodexSkillsDir"
-        Write-Host "  resolved commands directory: $script:ResolvedCodexCommandsDir"
+        Write-Host "  resolved prompts directory: $script:ResolvedCodexPromptsDir"
+        Write-Host "  compatibility commands directory: $script:ResolvedCodexCommandsDir"
         Write-Host "  installed sp-* skills:"
         foreach ($skill in $script:InstalledSkills) {
             Write-Host "    - $skill"
         }
-        Write-Host "  installed /prompts:sp.* commands:"
+        Write-Host "  installed /prompts:sp.* prompts:"
+        foreach ($command in $script:InstalledCodexPrompts) {
+            Write-Host "    - /prompts:$command"
+        }
+        Write-Host "  mirrored /prompts:sp.* commands:"
         foreach ($command in $script:InstalledCodexCommands) {
             Write-Host "    - /prompts:$command"
         }
+        if ($script:RemovedLegacyCodexPrompts.Count -gt 0) {
+            Write-Host "  removed legacy /prompts:speckit.* prompts:"
+            foreach ($command in $script:RemovedLegacyCodexPrompts) {
+                Write-Host "    - /prompts:$command"
+            }
+        }
         if ($script:RemovedLegacyCodexCommands.Count -gt 0) {
-            Write-Host "  removed legacy /prompts:speckit.* commands:"
+            Write-Host "  removed legacy /prompts:speckit.* mirrored commands:"
             foreach ($command in $script:RemovedLegacyCodexCommands) {
                 Write-Host "    - /prompts:$command"
             }

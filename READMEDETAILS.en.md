@@ -299,13 +299,14 @@ sh scripts/install.sh --ai codex ./your-project
 powershell -ExecutionPolicy Bypass -File .\scripts\install.ps1 -Ai codex .\your-project
 ```
 
-In `--ai codex` / `-Ai codex` mode, the installer writes both the Codex Desktop commands directory and the Codex skills directory. `--ai-skills` / `-AiSkills` is kept only as a compatibility alias, not as a hidden prerequisite. In that mode, the installer now prints:
+In `--ai codex` / `-Ai codex` mode, the installer writes Codex Desktop prompts into the primary `prompts` directory, mirrors them into the compatibility `commands` directory, and installs the Codex skills directory. `--ai-skills` / `-AiSkills` is kept only as a compatibility alias, not as a hidden prerequisite. In that mode, the installer now prints:
 
 - detected `CODEX_HOME`
-- the resolved Codex home, commands directory, and skills directory
-- the installed `/prompts:sp.*` command list
+- the resolved Codex home, primary prompts directory, compatibility commands directory, and skills directory
+- the `/prompts:sp.*` prompt list written into `prompts`
+- the mirrored `/prompts:sp.*` command list written into `commands`
 - the installed `sp-*` skill list
-- any removed legacy `/prompts:speckit.*` commands
+- any removed legacy `/prompts:speckit.*` files from both `prompts` and `commands`
 - direct trigger examples such as `/prompts:sp.specify` and `$sp-specify`
 
 After installation, you can already use the documentation rules and examples directly:

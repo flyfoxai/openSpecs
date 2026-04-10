@@ -15,11 +15,16 @@ DOWNLOAD_DIR=""
 DETECTED_CODEX_HOME="${CODEX_HOME:-}"
 RESOLVED_CODEX_HOME=""
 RESOLVED_CODEX_SKILLS_DIR=""
+RESOLVED_CODEX_PROMPTS_DIR=""
 RESOLVED_CODEX_COMMANDS_DIR=""
 INSTALLED_SKILLS=""
 INSTALLED_SKILLS_JSON=""
+INSTALLED_CODEX_PROMPTS=""
+INSTALLED_CODEX_PROMPTS_JSON=""
 INSTALLED_CODEX_COMMANDS=""
 INSTALLED_CODEX_COMMANDS_JSON=""
+REMOVED_LEGACY_CODEX_PROMPTS=""
+REMOVED_LEGACY_CODEX_PROMPTS_JSON=""
 REMOVED_LEGACY_CODEX_COMMANDS=""
 REMOVED_LEGACY_CODEX_COMMANDS_JSON=""
 RESOLVED_CLAUDE_COMMANDS_DIR=""
@@ -49,7 +54,7 @@ Behavior:
   - macOS/Linux local mode copies assets from the current repository.
   - curl|sh mode requires --archive-url or SP_INSTALL_ARCHIVE_URL.
   - Remote mode can also use SP_INSTALL_TARGET_DIR and SP_INSTALL_AUTO_YES.
-  - --ai codex installs Codex sp-* skills and Codex Desktop /prompts:sp.* commands.
+  - --ai codex installs Codex sp-* skills, primary Codex Desktop /prompts:sp.* prompts, and a compatibility commands mirror.
   - --ai claude installs /sp.* slash commands into .claude/commands in the target project.
   - --ai-skills is kept only as a compatibility alias for Codex mode.
 EOF
@@ -203,6 +208,7 @@ resolve_codex_paths() {
   fi
 
   RESOLVED_CODEX_SKILLS_DIR="$RESOLVED_CODEX_HOME/skills"
+  RESOLVED_CODEX_PROMPTS_DIR="$RESOLVED_CODEX_HOME/prompts"
   RESOLVED_CODEX_COMMANDS_DIR="$RESOLVED_CODEX_HOME/commands"
 
   if [ -z "$RESOLVED_CODEX_SKILLS_DIR" ]; then
@@ -268,27 +274,53 @@ $slug"
 install_codex_commands() {
   COMMAND_SOURCE_ROOT="$SOURCE_ROOT/installer-assets/claude-commands"
   if [ ! -d "$COMMAND_SOURCE_ROOT" ]; then
-    echo "error: Codex Desktop command installation failed: missing installer-assets/claude-commands in source." >&2
+    echo "error: Codex Desktop prompt installation failed: missing installer-assets/claude-commands in source." >&2
+    exit 1
+  fi
+
+  if ! mkdir -p "$RESOLVED_CODEX_PROMPTS_DIR"; then
+    echo "error: Codex Desktop prompt installation failed: resolved prompts directory missing or unwritable: $RESOLVED_CODEX_PROMPTS_DIR" >&2
     exit 1
   fi
 
   if ! mkdir -p "$RESOLVED_CODEX_COMMANDS_DIR"; then
-    echo "error: Codex Desktop command installation failed: resolved commands directory missing or unwritable: $RESOLVED_CODEX_COMMANDS_DIR" >&2
+    echo "error: Codex Desktop prompt installation failed: compatibility commands directory missing or unwritable: $RESOLVED_CODEX_COMMANDS_DIR" >&2
     exit 1
   fi
 
+  INSTALLED_CODEX_PROMPTS=""
+  INSTALLED_CODEX_PROMPTS_JSON=""
   INSTALLED_CODEX_COMMANDS=""
   INSTALLED_CODEX_COMMANDS_JSON=""
+  REMOVED_LEGACY_CODEX_PROMPTS=""
+  REMOVED_LEGACY_CODEX_PROMPTS_JSON=""
   REMOVED_LEGACY_CODEX_COMMANDS=""
   REMOVED_LEGACY_CODEX_COMMANDS_JSON=""
 
   for filename in $(legacy_codex_command_files); do
-    legacy_path="$RESOLVED_CODEX_COMMANDS_DIR/$filename"
     legacy_name="${filename%.md}"
-    if [ -f "$legacy_path" ]; then
-      rm -f "$legacy_path"
-      if [ -f "$legacy_path" ]; then
-        echo "error: Codex Desktop command installation failed: unable to remove legacy command $legacy_name from $RESOLVED_CODEX_COMMANDS_DIR" >&2
+    legacy_prompt_path="$RESOLVED_CODEX_PROMPTS_DIR/$filename"
+    if [ -f "$legacy_prompt_path" ]; then
+      rm -f "$legacy_prompt_path"
+      if [ -f "$legacy_prompt_path" ]; then
+        echo "error: Codex Desktop prompt installation failed: unable to remove legacy command $legacy_name from $RESOLVED_CODEX_PROMPTS_DIR" >&2
+        exit 1
+      fi
+      if [ -n "$REMOVED_LEGACY_CODEX_PROMPTS" ]; then
+        REMOVED_LEGACY_CODEX_PROMPTS="$REMOVED_LEGACY_CODEX_PROMPTS
+$legacy_name"
+        REMOVED_LEGACY_CODEX_PROMPTS_JSON="$REMOVED_LEGACY_CODEX_PROMPTS_JSON, \"$legacy_name\""
+      else
+        REMOVED_LEGACY_CODEX_PROMPTS="$legacy_name"
+        REMOVED_LEGACY_CODEX_PROMPTS_JSON="\"$legacy_name\""
+      fi
+    fi
+
+    legacy_command_path="$RESOLVED_CODEX_COMMANDS_DIR/$filename"
+    if [ -f "$legacy_command_path" ]; then
+      rm -f "$legacy_command_path"
+      if [ -f "$legacy_command_path" ]; then
+        echo "error: Codex Desktop prompt installation failed: unable to remove legacy command $legacy_name from $RESOLVED_CODEX_COMMANDS_DIR" >&2
         exit 1
       fi
       if [ -n "$REMOVED_LEGACY_CODEX_COMMANDS" ]; then
@@ -304,22 +336,42 @@ $legacy_name"
 
   for filename in $(sp_command_files); do
     src="$COMMAND_SOURCE_ROOT/$filename"
-    dest="$RESOLVED_CODEX_COMMANDS_DIR/$filename"
+    prompt_dest="$RESOLVED_CODEX_PROMPTS_DIR/$filename"
+    command_dest="$RESOLVED_CODEX_COMMANDS_DIR/$filename"
     command_name="${filename%.md}"
 
     if [ ! -f "$src" ]; then
-      echo "error: Codex Desktop command installation failed: missing source command file for $command_name" >&2
+      echo "error: Codex Desktop prompt installation failed: missing source command file for $command_name" >&2
       exit 1
     fi
 
-    if ! sed 's|/sp\.|/prompts:sp.|g' "$src" >"$dest"; then
-      echo "error: Codex Desktop command installation failed: failed to write $command_name into $RESOLVED_CODEX_COMMANDS_DIR" >&2
+    if ! sed 's|/sp\.|/prompts:sp.|g' "$src" >"$prompt_dest"; then
+      echo "error: Codex Desktop prompt installation failed: failed to write $command_name into $RESOLVED_CODEX_PROMPTS_DIR" >&2
       exit 1
     fi
 
-    if [ ! -f "$dest" ]; then
-      echo "error: Codex Desktop command installation failed: failed to write $command_name into $RESOLVED_CODEX_COMMANDS_DIR" >&2
+    if [ ! -f "$prompt_dest" ]; then
+      echo "error: Codex Desktop prompt installation failed: failed to write $command_name into $RESOLVED_CODEX_PROMPTS_DIR" >&2
       exit 1
+    fi
+
+    if ! sed 's|/sp\.|/prompts:sp.|g' "$src" >"$command_dest"; then
+      echo "error: Codex Desktop prompt installation failed: failed to mirror $command_name into $RESOLVED_CODEX_COMMANDS_DIR" >&2
+      exit 1
+    fi
+
+    if [ ! -f "$command_dest" ]; then
+      echo "error: Codex Desktop prompt installation failed: failed to mirror $command_name into $RESOLVED_CODEX_COMMANDS_DIR" >&2
+      exit 1
+    fi
+
+    if [ -n "$INSTALLED_CODEX_PROMPTS" ]; then
+      INSTALLED_CODEX_PROMPTS="$INSTALLED_CODEX_PROMPTS
+$command_name"
+      INSTALLED_CODEX_PROMPTS_JSON="$INSTALLED_CODEX_PROMPTS_JSON, \"$command_name\""
+    else
+      INSTALLED_CODEX_PROMPTS="$command_name"
+      INSTALLED_CODEX_PROMPTS_JSON="\"$command_name\""
     fi
 
     if [ -n "$INSTALLED_CODEX_COMMANDS" ]; then
@@ -332,8 +384,13 @@ $command_name"
     fi
   done
 
+  if [ -z "$INSTALLED_CODEX_PROMPTS" ]; then
+    echo "error: Codex Desktop prompt installation failed: no /prompts:sp.* commands were written to $RESOLVED_CODEX_PROMPTS_DIR" >&2
+    exit 1
+  fi
+
   if [ -z "$INSTALLED_CODEX_COMMANDS" ]; then
-    echo "error: Codex Desktop command installation failed: no /prompts:sp.* commands were written to $RESOLVED_CODEX_COMMANDS_DIR" >&2
+    echo "error: Codex Desktop prompt installation failed: no mirrored /prompts:sp.* commands were written to $RESOLVED_CODEX_COMMANDS_DIR" >&2
     exit 1
   fi
 }
@@ -411,9 +468,14 @@ write_install_manifest() {
       echo "  ,\"detectedCodexHome\": \"${DETECTED_CODEX_HOME:-}\""
       echo "  ,\"codexHome\": \"$RESOLVED_CODEX_HOME\""
       echo "  ,\"codexSkillsDir\": \"$RESOLVED_CODEX_SKILLS_DIR\""
+      echo "  ,\"codexPromptsDir\": \"$RESOLVED_CODEX_PROMPTS_DIR\""
       echo "  ,\"codexCommandsDir\": \"$RESOLVED_CODEX_COMMANDS_DIR\""
       echo "  ,\"installedSkills\": [$INSTALLED_SKILLS_JSON]"
+      echo "  ,\"installedCodexPrompts\": [$INSTALLED_CODEX_PROMPTS_JSON]"
       echo "  ,\"installedCodexCommands\": [$INSTALLED_CODEX_COMMANDS_JSON]"
+      if [ -n "$REMOVED_LEGACY_CODEX_PROMPTS_JSON" ]; then
+        echo "  ,\"removedLegacyCodexPrompts\": [$REMOVED_LEGACY_CODEX_PROMPTS_JSON]"
+      fi
       if [ -n "$REMOVED_LEGACY_CODEX_COMMANDS_JSON" ]; then
         echo "  ,\"removedLegacyCodexCommands\": [$REMOVED_LEGACY_CODEX_COMMANDS_JSON]"
       fi
@@ -461,7 +523,8 @@ Codex integration:
   detected CODEX_HOME: ${DETECTED_CODEX_HOME:-<empty>}
   resolved Codex home: $RESOLVED_CODEX_HOME
   resolved skills directory: $RESOLVED_CODEX_SKILLS_DIR
-  resolved commands directory: $RESOLVED_CODEX_COMMANDS_DIR
+  resolved prompts directory: $RESOLVED_CODEX_PROMPTS_DIR
+  compatibility commands directory: $RESOLVED_CODEX_COMMANDS_DIR
 EOF
   fi
 
@@ -630,19 +693,32 @@ if [ "$INSTALL_CODEX_SKILLS" -eq 1 ]; then
   echo "  detected CODEX_HOME: ${DETECTED_CODEX_HOME:-<empty>}"
   echo "  resolved Codex home: $RESOLVED_CODEX_HOME"
   echo "  resolved skills directory: $RESOLVED_CODEX_SKILLS_DIR"
-  echo "  resolved commands directory: $RESOLVED_CODEX_COMMANDS_DIR"
+  echo "  resolved prompts directory: $RESOLVED_CODEX_PROMPTS_DIR"
+  echo "  compatibility commands directory: $RESOLVED_CODEX_COMMANDS_DIR"
   echo "  installed sp-* skills:"
   printf '%s\n' "$INSTALLED_SKILLS" | while IFS= read -r skill_name; do
     [ -n "$skill_name" ] || continue
     echo "    - $skill_name"
   done
-  echo "  installed /prompts:sp.* commands:"
+  echo "  installed /prompts:sp.* prompts:"
+  printf '%s\n' "$INSTALLED_CODEX_PROMPTS" | while IFS= read -r command_name; do
+    [ -n "$command_name" ] || continue
+    echo "    - /prompts:$command_name"
+  done
+  echo "  mirrored /prompts:sp.* commands:"
   printf '%s\n' "$INSTALLED_CODEX_COMMANDS" | while IFS= read -r command_name; do
     [ -n "$command_name" ] || continue
     echo "    - /prompts:$command_name"
   done
+  if [ -n "$REMOVED_LEGACY_CODEX_PROMPTS" ]; then
+    echo "  removed legacy /prompts:speckit.* prompts:"
+    printf '%s\n' "$REMOVED_LEGACY_CODEX_PROMPTS" | while IFS= read -r command_name; do
+      [ -n "$command_name" ] || continue
+      echo "    - /prompts:$command_name"
+    done
+  fi
   if [ -n "$REMOVED_LEGACY_CODEX_COMMANDS" ]; then
-    echo "  removed legacy /prompts:speckit.* commands:"
+    echo "  removed legacy /prompts:speckit.* mirrored commands:"
     printf '%s\n' "$REMOVED_LEGACY_CODEX_COMMANDS" | while IFS= read -r command_name; do
       [ -n "$command_name" ] || continue
       echo "    - /prompts:$command_name"

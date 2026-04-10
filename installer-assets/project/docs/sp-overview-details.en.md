@@ -64,5 +64,5 @@ Less useful for very small tools with only a few pages and simple rules.
 - Codex Desktop prompts use `/prompts:sp.*`
 - Codex skills use `$sp-*`
 - `/sp.*` does not belong to Codex
-- To place Codex prompts and `sp-*` skills into the Codex directories, installation must be run in Codex mode
-- Codex installation removes legacy `/prompts:speckit.*` command files
+- To place Codex prompts and `sp-*` skills into the Codex directories, installation must be run in Codex mode; the installer writes to `CODEX_HOME/prompts` first and mirrors into `CODEX_HOME/commands`
+- Codex installation removes legacy `/prompts:speckit.*` files from both `prompts` and `commands`

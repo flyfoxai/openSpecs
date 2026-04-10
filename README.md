@@ -91,7 +91,7 @@ $env:SP_INSTALL_ARCHIVE_URL="https://github.com/flyfoxai/openSpecs/archive/refs/
 $env:SP_INSTALL_ARCHIVE_URL="https://github.com/flyfoxai/openSpecs/archive/refs/heads/main.zip"; $env:SP_INSTALL_TARGET_DIR="C:\path\to\your-project"; $env:SP_INSTALL_AI="codex"; irm https://raw.githubusercontent.com/flyfoxai/openSpecs/main/scripts/install.ps1 | iex
 ```
 
-> *注：默认安装只会落地 starter pack。只有在 Codex 模式下（`--ai codex` 或 `SP_INSTALL_AI=codex`），安装器才会检测 `CODEX_HOME` 或回退到默认 `.codex` 目录，并同时写入 Codex Desktop 的 `/prompts:sp.*` 命令文件与 `sp-*` skills；安装时还会清理旧的 `speckit.*` Codex Desktop 命令文件。*
+> *注：默认安装只会落地 starter pack。只有在 Codex 模式下（`--ai codex` 或 `SP_INSTALL_AI=codex`），安装器才会检测 `CODEX_HOME` 或回退到默认 `.codex` 目录，优先把 Codex Desktop 的 `/prompts:sp.*` 命令文件写入 `CODEX_HOME/prompts`，并同步镜像到 `CODEX_HOME/commands`，同时安装 `sp-*` skills；安装时还会清理两个目录里的旧 `speckit.*` Codex Desktop 命令文件。*
 
 ---
 

@@ -88,7 +88,8 @@ Codex 应使用 skills 触发：
 安装器应默认执行：
 
 - 安装 starter pack
-- 安装 Codex Desktop 可见的 `/prompts:sp.*` commands
+- 安装 Codex Desktop 可见的 `/prompts:sp.*` prompts 到 `CODEX_HOME/prompts`
+- 同步镜像 `/prompts:sp.*` 到 `CODEX_HOME/commands` 兼容目录
 - 安装 Codex 所需的 `sp-*` skills
 
 不应再要求用户额外记忆“只有再加一个 `--ai-skills` 才会真的装”这种隐藏规则。
@@ -101,11 +102,12 @@ Codex 应使用 skills 触发：
 Codex 模式的成功条件必须同时满足：
 
 - starter pack 已写入目标项目
-- Codex commands 目录里实际出现 `sp.*` 命令文件
+- Codex prompts 目录里实际出现 `sp.*` 命令文件
+- Codex commands 兼容目录里实际出现镜像的 `sp.*` 命令文件
 - Codex skills 目录里实际出现 `sp-*`
 - 安装输出打印出已安装的 `/prompts:sp.*` 与 `sp-*` 列表
 - 安装输出给出正确触发示例，如 `/prompts:sp.specify` 与 `$sp-specify`
-- 旧的 `/prompts:speckit.*` 若存在，应被清理
+- `prompts` 与 `commands` 里的旧 `/prompts:speckit.*` 若存在，应被清理
 
 否则应直接失败，不允许假成功。
 
@@ -222,7 +224,7 @@ Claude 模式的成功条件必须同时满足：
 
 例如：
 
-- 选了 `--ai codex`，但 commands 目录不可写
+- 选了 `--ai codex`，但 prompts 主目录或 commands 兼容目录不可写
 - 选了 `--ai codex`，但没有任何 `sp.*` prompt 文件被写入
 - 选了 `--ai codex`，但 skills 目录不可写
 - 选了 `--ai codex`，但没有任何 `sp-*` 被写入

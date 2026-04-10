@@ -64,5 +64,5 @@
 - Codex Desktop prompts 使用 `/prompts:sp.*`
 - Codex skills 使用 `$sp-*`
 - `/sp.*` 不属于 Codex
-- 若要把 Codex prompts 与 `sp-*` skills 一起装到 Codex 目录，安装时必须启用 Codex 模式
-- Codex 安装时会清理旧的 `/prompts:speckit.*` 命令文件
+- 若要把 Codex prompts 与 `sp-*` skills 一起装到 Codex 目录，安装时必须启用 Codex 模式；安装器会优先写入 `CODEX_HOME/prompts`，并同步镜像到 `CODEX_HOME/commands`
+- Codex 安装时会同时清理 `prompts` 与 `commands` 里的旧 `/prompts:speckit.*` 命令文件
