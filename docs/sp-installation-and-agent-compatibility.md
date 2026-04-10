@@ -117,6 +117,7 @@ specify init --here --force --ai claude
 2. 通过 `--ai` 选择目标 agent
 3. 初始化出的命令文件内容按 agent 类型分别写入：
    - slash command agent 使用 `/sp.*`
+   - Codex Desktop prompts 使用 `/prompts:sp.*`
    - Codex skills 模式使用 `$sp-*`
 
 这样做的好处：
@@ -169,6 +170,7 @@ specify init --here --force --ai claude
 设计要求：
 
 - 大多数支持 slash command 的 agent 使用 `/sp.*`
+- Codex Desktop prompts 使用 `/prompts:sp.*`
 - Codex skills 模式使用 `$sp-*`
 - 不应把 Codex 视为唯一的 skills 型 agent
 - 命令参数写法尽量简单，避免依赖少数 agent 才支持的复杂自定义参数
@@ -215,11 +217,12 @@ fork 时建议延续原版“按 agent 写入不同命令目录”的方式。
 - Windows: `%USERPROFILE%\.codex`
 - macOS / Linux: `~/.codex`
 - 最终 skills 安装目录为 `<codex_home>/skills`
+- 最终 Codex Desktop commands 安装目录为 `<codex_home>/commands`
 - 若目录不存在，应主动创建
 - 若目录仍无法解析或不可写，应直接报错
 - 当前 fork 的安装脚本应支持 `--ai codex` 直接进入 Codex 集成模式
 - `--ai-skills` 在当前 fork 中只保留为兼容别名，不应再成为隐藏前提
-- 将命令以 Codex skills 形式安装，并采用 `$sp-*` 调用方式
+- 将命令同时安装为 Codex Desktop prompts 与 Codex skills，并分别采用 `/prompts:sp.*` 与 `$sp-*` 调用方式
 - 升级后提醒用户重载 workspace 或重新打开 agent
 
 skills 型 agent 的实现约束：
@@ -230,11 +233,12 @@ skills 型 agent 的实现约束：
 
 Codex 的额外实现约束：
 
-- 命令文件命名应与 `$sp-*` 调用方式一致
+- 命令文件命名应与 `/prompts:sp.*` 和 `$sp-*` 调用方式一致
 - 选择 Codex 模式后，“安装成功”必须同时满足：
 - 项目内模板已生成
+- `sp.*` prompts 已实际写入 Codex commands 目录
 - `sp-*` skills 已实际写入 Codex skills 目录
-- 安装器输出实际写入的 skill 列表和触发示例
+- 安装器输出实际写入的 prompt 与 skill 列表和触发示例
 
 ## 7.1 Generic Agent 兼容要求
 

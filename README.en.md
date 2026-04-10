@@ -85,13 +85,14 @@ If no directory is provided, installation defaults to the current directory. Con
 Codex integration notes:
 
 - `sp.specify` and `sp.analyze` are framework step names
+- Codex Desktop prompts use `/prompts:sp.*`
 - Codex uses `$sp-*` triggers
 - slash-command agents use `/sp.*`
-- Starter-pack-only installs do not write Codex skills
-- The installer installs Codex skills by default when `--ai codex` or `-Ai codex` is used
+- Starter-pack-only installs do not write Codex prompts or skills
+- The installer installs Codex Desktop prompts and Codex skills by default when `--ai codex` or `-Ai codex` is used
 - The remote one-command Codex path uses `SP_INSTALL_AI=codex`
 - The installer installs Claude slash commands by default when `--ai claude` or `-Ai claude` is used
-- In Codex mode, installation is successful only when both project templates and actual `sp-*` skills are written
+- In Codex mode, installation is successful only when project templates, `/prompts:sp.*` command files, and actual `sp-*` skills are written
 
 ## Best Fit
 

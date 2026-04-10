@@ -287,9 +287,9 @@ $env:SP_INSTALL_ARCHIVE_URL="https://github.com/flyfoxai/openSpecs/archive/refs/
 - 安装前默认要求确认
 - `curl | sh` 场景支持通过 `--archive-url` 与可选目标目录传参
 - `irm | iex` 场景通过 `SP_INSTALL_ARCHIVE_URL`、`SP_INSTALL_TARGET_DIR`、`SP_INSTALL_AI`、`SP_INSTALL_AUTO_YES` 传参
-- 不带 `--ai codex` 或 `SP_INSTALL_AI=codex` 时，安装器只落地 starter pack，不会写入 Codex skills
+- 不带 `--ai codex` 或 `SP_INSTALL_AI=codex` 时，安装器只落地 starter pack，不会写入 Codex prompts 或 skills
 
-如果当前要给 Codex 安装 skills，需要显式启用 Codex 模式：
+如果当前要给 Codex 安装 prompts 和 skills，需要显式启用 Codex 模式：
 
 ```bash
 sh scripts/install.sh --ai codex ./your-project
@@ -299,12 +299,14 @@ sh scripts/install.sh --ai codex ./your-project
 powershell -ExecutionPolicy Bypass -File .\scripts\install.ps1 -Ai codex .\your-project
 ```
 
-当前仓库里的 starter pack 安装器会在 `--ai codex` / `-Ai codex` 模式下尝试写入 Codex skills 目录。`--ai-skills` / `-AiSkills` 只保留为兼容别名，不再是隐藏前提。安装结束时会打印：
+当前仓库里的 starter pack 安装器会在 `--ai codex` / `-Ai codex` 模式下尝试写入 Codex Desktop commands 目录与 Codex skills 目录。`--ai-skills` / `-AiSkills` 只保留为兼容别名，不再是隐藏前提。安装结束时会打印：
 
 - 检测到的 `CODEX_HOME`
-- 最终使用的 Codex home 与 skills 目录
+- 最终使用的 Codex home、commands 目录与 skills 目录
+- 已安装的 `/prompts:sp.*` 命令列表
 - 已安装的 `sp-*` skills 列表
-- 可直接触发的示例，例如 `$sp-specify`
+- 清理掉的旧 `/prompts:speckit.*` 命令列表（如果有）
+- 可直接触发的示例，例如 `/prompts:sp.specify`、`$sp-specify`
 
 安装完成后，你可以直接用这套文档规范和样例推进设计工作：
 
@@ -333,13 +335,15 @@ specify check
 命令触发方式约定为：
 
 - slash command agent：`/sp.specify`
+- Codex Desktop prompts：`/prompts:sp.specify`
 - Codex skills 模式：`$sp-specify`
 
 必须明确区分：
 
 - `/sp.*` 只属于 slash-command agents
-- `$sp-*` 只属于 Codex skills
-- 不应把 Codex 示例写成 `/prompt:sp.analyze`、`/sp.analyze` 或其他 slash command 形式
+- `/prompts:sp.*` 属于 Codex Desktop prompts
+- `$sp-*` 属于 Codex skills
+- 不应再把 Codex Desktop 示例写成旧的 `/prompts:speckit.analyze`
 
 其他命令同理：
 

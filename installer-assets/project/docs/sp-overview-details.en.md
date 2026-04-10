@@ -61,6 +61,8 @@ Less useful for very small tools with only a few pages and simple rules.
 
 ## Codex Notes
 
-- Codex uses skills only, with `$sp-*` triggers
+- Codex Desktop prompts use `/prompts:sp.*`
+- Codex skills use `$sp-*`
 - `/sp.*` does not belong to Codex
-- To place `sp-*` skills into the Codex skills directory, installation must be run in Codex mode
+- To place Codex prompts and `sp-*` skills into the Codex directories, installation must be run in Codex mode
+- Codex installation removes legacy `/prompts:speckit.*` command files

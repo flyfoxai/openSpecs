@@ -44,7 +44,8 @@
 ### 5. 步骤语义与平台触发解耦 (Agent Agnostic)
 无论你用哪个 AI 平台，底层工程规范始终是 `sp.*`：
 *   **Claude Code 等 (Slash Command)** 触发形式：`/sp.specify`
-*   **Codex CLI (Skills)** 触发形式：`$sp-specify`
+*   **Codex Desktop prompts** 触发形式：`/prompts:sp.specify`
+*   **Codex Skills** 触发形式：`$sp-specify`
 
 ---
 
@@ -57,7 +58,7 @@
 # 默认安装
 sh scripts/install.sh ./your-project
 
-# 为 Codex 安装 (自动生成 sp-* skills)
+# 为 Codex 安装 (自动生成 /prompts:sp.* 和 sp-* skills)
 sh scripts/install.sh --ai codex ./your-project
 
 # 为 Claude 安装 (自动生成 /sp.* commands)
@@ -90,7 +91,7 @@ $env:SP_INSTALL_ARCHIVE_URL="https://github.com/flyfoxai/openSpecs/archive/refs/
 $env:SP_INSTALL_ARCHIVE_URL="https://github.com/flyfoxai/openSpecs/archive/refs/heads/main.zip"; $env:SP_INSTALL_TARGET_DIR="C:\path\to\your-project"; $env:SP_INSTALL_AI="codex"; irm https://raw.githubusercontent.com/flyfoxai/openSpecs/main/scripts/install.ps1 | iex
 ```
 
-> *注：默认安装只会落地 starter pack。只有在 Codex 模式下（`--ai codex` 或 `SP_INSTALL_AI=codex`），安装器才会检测 `CODEX_HOME` 或回退到默认 `.codex/skills` 目录，并把 `sp-*` skills 真正写进去。*
+> *注：默认安装只会落地 starter pack。只有在 Codex 模式下（`--ai codex` 或 `SP_INSTALL_AI=codex`），安装器才会检测 `CODEX_HOME` 或回退到默认 `.codex` 目录，并同时写入 Codex Desktop 的 `/prompts:sp.*` 命令文件与 `sp-*` skills；安装时还会清理旧的 `speckit.*` Codex Desktop 命令文件。*
 
 ---
 

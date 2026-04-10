@@ -287,9 +287,9 @@ Notes:
 - Confirmation is required by default
 - `curl | sh` mode accepts `--archive-url` and an optional target directory
 - `irm | iex` mode uses `SP_INSTALL_ARCHIVE_URL`, `SP_INSTALL_TARGET_DIR`, `SP_INSTALL_AI`, and `SP_INSTALL_AUTO_YES`
-- Without `--ai codex` or `SP_INSTALL_AI=codex`, the installer only writes the starter pack and does not install Codex skills
+- Without `--ai codex` or `SP_INSTALL_AI=codex`, the installer only writes the starter pack and does not install Codex prompts or skills
 
-If you want to install Codex skills as part of the starter pack, enable Codex mode explicitly:
+If you want to install Codex prompts and skills as part of the starter pack, enable Codex mode explicitly:
 
 ```bash
 sh scripts/install.sh --ai codex ./your-project
@@ -299,12 +299,14 @@ sh scripts/install.sh --ai codex ./your-project
 powershell -ExecutionPolicy Bypass -File .\scripts\install.ps1 -Ai codex .\your-project
 ```
 
-In `--ai codex` / `-Ai codex` mode, the installer writes Codex skills by default. `--ai-skills` / `-AiSkills` is kept only as a compatibility alias, not as a hidden prerequisite. In that mode, the installer now prints:
+In `--ai codex` / `-Ai codex` mode, the installer writes both the Codex Desktop commands directory and the Codex skills directory. `--ai-skills` / `-AiSkills` is kept only as a compatibility alias, not as a hidden prerequisite. In that mode, the installer now prints:
 
 - detected `CODEX_HOME`
-- the resolved Codex home and skills directory
+- the resolved Codex home, commands directory, and skills directory
+- the installed `/prompts:sp.*` command list
 - the installed `sp-*` skill list
-- direct trigger examples such as `$sp-specify`
+- any removed legacy `/prompts:speckit.*` commands
+- direct trigger examples such as `/prompts:sp.specify` and `$sp-specify`
 
 After installation, you can already use the documentation rules and examples directly:
 
@@ -334,13 +336,15 @@ specify check
 Command trigger conventions:
 
 - Slash-command agents: `/sp.specify`
+- Codex Desktop prompts: `/prompts:sp.specify`
 - Codex skills mode: `$sp-specify`
 
 These forms must stay separate:
 
 - `/sp.*` belongs only to slash-command agents
-- `$sp-*` belongs only to Codex skills
-- Codex examples must not be written as `/prompt:sp.analyze`, `/sp.analyze`, or any other slash-command form
+- `/prompts:sp.*` belongs to Codex Desktop prompts
+- `$sp-*` belongs to Codex skills
+- Codex Desktop examples must not be written as legacy `/prompts:speckit.analyze`
 
 The same pattern applies to the other commands:
 

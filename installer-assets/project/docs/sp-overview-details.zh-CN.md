@@ -61,6 +61,8 @@
 
 ## Codex 补充说明
 
-- Codex 只走 skills，命令触发形式固定为 `$sp-*`
+- Codex Desktop prompts 使用 `/prompts:sp.*`
+- Codex skills 使用 `$sp-*`
 - `/sp.*` 不属于 Codex
-- 若要把 `sp-*` skills 装到 Codex skills 目录，安装时必须启用 Codex 模式
+- 若要把 Codex prompts 与 `sp-*` skills 一起装到 Codex 目录，安装时必须启用 Codex 模式
+- Codex 安装时会清理旧的 `/prompts:speckit.*` 命令文件

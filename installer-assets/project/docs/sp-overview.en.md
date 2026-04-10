@@ -30,9 +30,10 @@ The current phase covers documentation only. The workflow ends at `sp.analyze` a
 
 ## Trigger Forms
 
+- Codex Desktop prompts use `/prompts:sp.*`
 - Codex skills use `$sp-*`
 - Slash-command agents use `/sp.*`
-- `sp-*` skills are written into the Codex skills directory only when Codex mode is enabled during installation
+- `/prompts:sp.*` files and `sp-*` skills are written into the Codex directories only when Codex mode is enabled during installation
 
 ## Read Next
 

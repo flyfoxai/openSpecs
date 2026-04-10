@@ -16,7 +16,10 @@ $ErrorActionPreference = "Stop"
 $script:DownloadDir = $null
 $script:ResolvedCodexHome = $null
 $script:ResolvedCodexSkillsDir = $null
+$script:ResolvedCodexCommandsDir = $null
 $script:InstalledSkills = @()
+$script:InstalledCodexCommands = @()
+$script:RemovedLegacyCodexCommands = @()
 $script:DetectedCodexHome = $env:CODEX_HOME
 $script:ResolvedClaudeCommandsDir = $null
 $script:InstalledCommands = @()
@@ -42,7 +45,7 @@ Behavior:
   - Windows local mode copies assets from the current repository.
   - iwr|iex mode requires -ArchiveUrl or SP_INSTALL_ARCHIVE_URL.
   - Remote mode can also use SP_INSTALL_TARGET_DIR and SP_INSTALL_AUTO_YES.
-  - -Ai codex installs Codex sp-* skills into the Codex skills directory.
+  - -Ai codex installs Codex sp-* skills and Codex Desktop /prompts:sp.* commands.
   - -Ai claude installs /sp.* slash commands into .claude/commands in the target project.
   - -AiSkills is kept only as a compatibility alias for Codex mode.
 "@
@@ -100,7 +103,7 @@ function Get-CodexSkillSlugs {
     )
 }
 
-function Get-ClaudeCommandFiles {
+function Get-SpCommandFiles {
     @(
         "sp.constitution.md",
         "sp.specify.md",
@@ -112,6 +115,20 @@ function Get-ClaudeCommandFiles {
         "sp.plan.md",
         "sp.tasks.md",
         "sp.analyze.md"
+    )
+}
+
+function Get-LegacyCodexCommandFiles {
+    @(
+        "speckit.constitution.md",
+        "speckit.specify.md",
+        "speckit.clarify.md",
+        "speckit.checklist.md",
+        "speckit.plan.md",
+        "speckit.tasks.md",
+        "speckit.analyze.md",
+        "speckit.implement.md",
+        "speckit.taskstoissues.md"
     )
 }
 
@@ -189,6 +206,7 @@ function Resolve-CodexPaths {
     }
 
     $script:ResolvedCodexSkillsDir = Join-Path $script:ResolvedCodexHome "skills"
+    $script:ResolvedCodexCommandsDir = Join-Path $script:ResolvedCodexHome "commands"
     if (-not $script:ResolvedCodexSkillsDir) {
         throw "Codex skills installation failed: resolved skills directory missing or empty."
     }
@@ -263,7 +281,7 @@ function Install-ClaudeCommands {
 
     $script:InstalledCommands = @()
 
-    foreach ($filename in Get-ClaudeCommandFiles) {
+    foreach ($filename in Get-SpCommandFiles) {
         $src = Join-Path $commandsSourceRoot $filename
         $dest = Join-Path $script:ResolvedClaudeCommandsDir $filename
         $commandName = [System.IO.Path]::GetFileNameWithoutExtension($filename)
@@ -283,6 +301,62 @@ function Install-ClaudeCommands {
 
     if ($script:InstalledCommands.Count -eq 0) {
         throw "Claude command installation failed: no /sp.* commands were written to $script:ResolvedClaudeCommandsDir"
+    }
+}
+
+function Install-CodexCommands {
+    param(
+        [string]$SourceRoot
+    )
+
+    $commandsSourceRoot = Join-Path $SourceRoot "installer-assets/claude-commands"
+    if (-not (Test-Path $commandsSourceRoot)) {
+        throw "Codex Desktop command installation failed: missing installer-assets/claude-commands in source."
+    }
+
+    try {
+        New-Item -ItemType Directory -Force -Path $script:ResolvedCodexCommandsDir | Out-Null
+    }
+    catch {
+        throw "Codex Desktop command installation failed: resolved commands directory missing or unwritable: $script:ResolvedCodexCommandsDir"
+    }
+
+    $script:InstalledCodexCommands = @()
+    $script:RemovedLegacyCodexCommands = @()
+
+    foreach ($filename in Get-LegacyCodexCommandFiles) {
+        $legacyPath = Join-Path $script:ResolvedCodexCommandsDir $filename
+        if (Test-Path $legacyPath) {
+            Remove-Item -Force $legacyPath
+            if (Test-Path $legacyPath) {
+                throw "Codex Desktop command installation failed: unable to remove legacy command $filename from $script:ResolvedCodexCommandsDir"
+            }
+            $script:RemovedLegacyCodexCommands += [System.IO.Path]::GetFileNameWithoutExtension($filename)
+        }
+    }
+
+    foreach ($filename in Get-SpCommandFiles) {
+        $src = Join-Path $commandsSourceRoot $filename
+        $dest = Join-Path $script:ResolvedCodexCommandsDir $filename
+        $commandName = [System.IO.Path]::GetFileNameWithoutExtension($filename)
+
+        if (-not (Test-Path $src)) {
+            throw "Codex Desktop command installation failed: missing source command file for $commandName"
+        }
+
+        $content = Get-Content -Raw -Path $src
+        $content = $content -replace '/sp\.', '/prompts:sp.'
+        Set-Content -Path $dest -Value $content -Encoding utf8
+
+        if (-not (Test-Path $dest)) {
+            throw "Codex Desktop command installation failed: failed to write $commandName into $script:ResolvedCodexCommandsDir"
+        }
+
+        $script:InstalledCodexCommands += $commandName
+    }
+
+    if ($script:InstalledCodexCommands.Count -eq 0) {
+        throw "Codex Desktop command installation failed: no /prompts:sp.* commands were written to $script:ResolvedCodexCommandsDir"
     }
 }
 
@@ -371,14 +445,16 @@ try {
         Write-Host "  - .sp/install-manifest.json"
         if ($installCodexSkills) {
             Write-Host "  - Codex skills: $((Get-CodexSkillSlugs) -join ', ')"
+            Write-Host "  - Codex Desktop prompts: $(((Get-SpCommandFiles) | ForEach-Object { [System.IO.Path]::GetFileNameWithoutExtension($_) }) -join ', ')"
             Write-Host ""
             Write-Host "Codex integration:"
             Write-Host "  detected CODEX_HOME: $(if ($script:DetectedCodexHome) { $script:DetectedCodexHome } else { '<empty>' })"
             Write-Host "  resolved Codex home: $script:ResolvedCodexHome"
             Write-Host "  resolved skills directory: $script:ResolvedCodexSkillsDir"
+            Write-Host "  resolved commands directory: $script:ResolvedCodexCommandsDir"
         }
         if ($installClaudeCommands) {
-            Write-Host "  - Claude commands: $(((Get-ClaudeCommandFiles) | ForEach-Object { [System.IO.Path]::GetFileNameWithoutExtension($_) }) -join ', ')"
+            Write-Host "  - Claude commands: $(((Get-SpCommandFiles) | ForEach-Object { [System.IO.Path]::GetFileNameWithoutExtension($_) }) -join ', ')"
             Write-Host ""
             Write-Host "Claude integration:"
             Write-Host "  target commands directory: $script:ResolvedClaudeCommandsDir"
@@ -404,6 +480,7 @@ try {
 
     if ($installCodexSkills) {
         Install-CodexSkills -SourceRoot $sourceRoot
+        Install-CodexCommands -SourceRoot $sourceRoot
     }
 
     if ($installClaudeCommands) {
@@ -447,7 +524,12 @@ try {
         $manifest["detectedCodexHome"] = if ($script:DetectedCodexHome) { $script:DetectedCodexHome } else { "" }
         $manifest["codexHome"] = $script:ResolvedCodexHome
         $manifest["codexSkillsDir"] = $script:ResolvedCodexSkillsDir
+        $manifest["codexCommandsDir"] = $script:ResolvedCodexCommandsDir
         $manifest["installedSkills"] = $script:InstalledSkills
+        $manifest["installedCodexCommands"] = $script:InstalledCodexCommands
+        if ($script:RemovedLegacyCodexCommands.Count -gt 0) {
+            $manifest["removedLegacyCodexCommands"] = $script:RemovedLegacyCodexCommands
+        }
     }
 
     if ($installClaudeCommands) {
@@ -455,7 +537,7 @@ try {
         $manifest["installedCommands"] = $script:InstalledCommands
     }
 
-    $manifest | ConvertTo-Json -Depth 4 | Set-Content -Path (Join-Path $manifestDir "install-manifest.json")
+    $manifest | ConvertTo-Json -Depth 4 | Set-Content -Path (Join-Path $manifestDir "install-manifest.json") -Encoding utf8
 
     Write-Host "sp document-stage starter pack installed to:"
     Write-Host "  $targetAbs"
@@ -466,15 +548,28 @@ try {
         Write-Host "  detected CODEX_HOME: $(if ($script:DetectedCodexHome) { $script:DetectedCodexHome } else { '<empty>' })"
         Write-Host "  resolved Codex home: $script:ResolvedCodexHome"
         Write-Host "  resolved skills directory: $script:ResolvedCodexSkillsDir"
+        Write-Host "  resolved commands directory: $script:ResolvedCodexCommandsDir"
         Write-Host "  installed sp-* skills:"
         foreach ($skill in $script:InstalledSkills) {
             Write-Host "    - $skill"
         }
+        Write-Host "  installed /prompts:sp.* commands:"
+        foreach ($command in $script:InstalledCodexCommands) {
+            Write-Host "    - /prompts:$command"
+        }
+        if ($script:RemovedLegacyCodexCommands.Count -gt 0) {
+            Write-Host "  removed legacy /prompts:speckit.* commands:"
+            foreach ($command in $script:RemovedLegacyCodexCommands) {
+                Write-Host "    - /prompts:$command"
+            }
+        }
         Write-Host ""
         Write-Host "Codex trigger examples:"
+        Write-Host '  /prompts:sp.specify'
+        Write-Host '  /prompts:sp.analyze'
         Write-Host '  $sp-specify'
         Write-Host '  $sp-analyze'
-        Write-Host "  reload the Codex workspace if the new skills do not appear immediately"
+        Write-Host "  reload the Codex workspace if the new prompts or skills do not appear immediately"
     }
     elseif ($installClaudeCommands) {
         Write-Host ""
@@ -493,7 +588,7 @@ try {
     else {
         Write-Host ""
         Write-Host "No agent integration was installed."
-        Write-Host "To install Codex skills, rerun with:"
+        Write-Host "To install Codex prompts and skills, rerun with:"
         Write-Host "  powershell -ExecutionPolicy Bypass -File .\scripts\install.ps1 -Ai codex $TargetDir"
         Write-Host "To install Claude slash commands, rerun with:"
         Write-Host "  powershell -ExecutionPolicy Bypass -File .\scripts\install.ps1 -Ai claude $TargetDir"
@@ -501,6 +596,7 @@ try {
 
     Write-Host ""
     Write-Host "Trigger conventions:"
+    Write-Host '  - Codex Desktop prompts use /prompts:sp.*'
     Write-Host '  - Codex skills use $sp-*'
     Write-Host "  - slash-command agents use /sp.*"
     Write-Host ""
@@ -508,13 +604,13 @@ try {
     Write-Host "  1. Read docs/sp-overview.zh-CN.md or docs/sp-overview.en.md"
     Write-Host "  2. Review .specify/memory/constitution.md"
     if ($installCodexSkills) {
-        Write-Host '  3. Reload Codex, then start with $sp-specify'
+        Write-Host '  3. Reload Codex, then start with /prompts:sp.specify or $sp-specify'
     }
     elseif ($installClaudeCommands) {
         Write-Host '  3. Reload Claude, then start with /sp.specify'
     }
     else {
-        Write-Host "  3. Install an agent integration, then start with /sp.specify or `$sp-specify"
+        Write-Host "  3. Install an agent integration, then start with /prompts:sp.specify, /sp.specify, or `$sp-specify"
     }
 }
 finally {
