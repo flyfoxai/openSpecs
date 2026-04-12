@@ -1,76 +1,79 @@
-# Windows Codex Skills Installation
+# Codex Prompt Installation Cleanup
 
 ## Background
 
-`2026-04-06` 的 Windows 复测表明，提交 `172cfbc` 的 `install.ps1` 只落地了 document-stage starter pack，并没有把任何 `sp-*` skills 写入 Codex skills 目录。
+`2026-04-06` 的 Windows 复测曾暴露一个关键问题：早期 fork 一度把 Codex 集成理解成 `sp-*` skills 安装，但用户真实可见、可触发的入口并不稳定，最终把排障链路拉得过长。
 
-这会制造一个危险假象：用户看到安装成功与 `install-manifest.json` 后，容易误以为 Codex 已可直接使用，但实际既没有完成 Codex skills 集成，也容易被误导去测试 `/sp.*` 或 `/prompt:sp.analyze` 这类不属于 Codex 的触发形式。
-
-当前仓库文档已经明确区分：
+当前仓库已经收敛到更简单的策略：
 
 - slash-command agents 使用 `/sp.*`
-- Codex skills 使用 `$sp-*`
+- Codex Desktop 使用 `/prompts:sp.*`
+- `CODEX_HOME/prompts` 是主安装目录
+- `CODEX_HOME/commands` 作为兼容镜像目录
+- 遗留 `CODEX_HOME/skills/sp-*` 只做清理，不再作为现行分发方式
 
-因此，这个 feature 的核心目标不是“让 Codex 也支持 slash command”，而是让 Windows 安装器在 Codex 模式下真正完成 skills 安装，并把成功条件、失败条件和触发方式讲清楚。
+因此，这个 feature 的目标不再是“让 Codex skills 正常安装”，而是把仓库、安装器和说明文档统一到 prompt-only 策略，并清掉旧 skills 包装带来的歧义。
 
 ## Goals
 
-- 明确区分 starter-pack 安装和 Codex integration 安装
-- 当用户选择 Codex 模式时，真正把 `sp-*` 写入 Codex skills 目录
-- 确保 Codex 的对外触发方式始终是 `$sp-*`
-- 让 Windows 在 `CODEX_HOME` 为空时仍能正确回退到默认目录
-- 让 Codex 模式下的“安装成功”必须同时代表项目资产和 skills 均已写入
+- 明确区分 starter pack 安装和 Codex prompt 集成安装
+- 当用户选择 Codex 模式时，把 `sp.*` 写入 Codex Desktop prompts，并同步镜像到 commands
+- 清理遗留的 `sp-*` skills 目录和 `speckit.*` 旧命令文件
+- 让安装成功条件、manifest 字段、trigger 示例和 next steps 与 prompt-only 策略一致
+- 避免文档继续把用户引回 `$sp-*` 或 skills 路径
 
 ## In Scope
 
-- `scripts/install.ps1` 的 Codex 模式入口与行为
-- `-Ai codex` 默认安装 skills，以及 `-AiSkills` 兼容别名的约束与错误提示
-- Windows 下 `CODEX_HOME` 与默认 `.codex` 目录解析
-- Codex skills 目录创建、写入校验与失败判定
-- 安装输出、manifest 字段、trigger 示例与 next steps 文案
-- starter-pack-only 模式与 Codex mode 的文案区分
+- `scripts/install.ps1` 和 `scripts/install.sh` 的 Codex 模式行为
+- `--ai codex` 的 prompts/commands 写入、清理和失败判定
+- `--ai-skills` / `-AiSkills` 兼容空操作文案
+- `CODEX_HOME` 与默认 `.codex` 目录解析
+- README、兼容文档、概览文档与 feature memory 的同步更新
 
 ## Out Of Scope
 
-- 为 Codex 增加 `/sp.*` 兼容形式
-- 修改 `sp-*` skills 的正文工作流语义
-- 改变其他 slash-command agent 的命令注册方式
+- 重新分发或恢复 `installer-assets/codex-skills`
+- 为 Codex 增加 `$sp-*` 作为当前推荐入口
+- 改变 `sp.*` 文档工作流本身的阶段语义
 - 与安装器无关的生产实现
 
 ## Roles
 
-- `ROLE-USER`：执行一键安装并依据输出判断是否能在 Codex 中直接使用 `sp`
-- `ROLE-INSTALLER`：复制 starter pack，按模式决定是否安装 Codex skills，并输出可验证结果
-- `ROLE-CODEX`：从 Codex skills 目录加载 `sp-*`，并通过 `$sp-*` 触发
-- `ROLE-MAINTAINER`：保持脚本、README、兼容文档和验证矩阵的一致性
+- `ROLE-USER`：执行安装并根据输出判断 Codex 是否已经可见 `/prompts:sp.*`
+- `ROLE-INSTALLER`：复制 starter pack、安装 prompts/commands、清理旧产物、失败时直接报错
+- `ROLE-CODEX`：从 prompts/commands 发现 `sp.*` prompt 文件，并通过 `/prompts:sp.*` 触发
+- `ROLE-MAINTAINER`：保持脚本、README、兼容文档和验证矩阵一致
 
 ## Success Criteria
 
-- starter-pack-only 模式必须明确说明未安装 Codex skills
-- Codex 模式必须在 `-Ai codex` 下默认安装 skills，`-AiSkills` 仅作为兼容别名保留
-- 当 `CODEX_HOME` 为空时，Windows 必须回退到 `%USERPROFILE%\.codex`
-- 最终 skills 目录必须解析为 `<codex_home>\skills`
-- 若 skills 目录不存在，安装器必须自动创建
-- 若目录无法解析或不可写，安装器必须直接失败，不允许静默成功
-- Codex 模式下，只有在项目资产已落地且至少一个 `sp-*` 已成功写入时，安装才算成功
-- 安装器必须输出检测到的 `CODEX_HOME`、最终 Codex home、最终 skills 目录、已安装的 `sp-*` 列表
-- 安装器必须输出 Codex 触发示例，例如 `$sp-specify`、`$sp-analyze`
-- manifest 必须在 Codex 模式下记录 Codex 相关安装信息
+- starter-pack-only 模式必须明确说明未安装任何 agent 集成
+- Codex 模式必须在 `-Ai codex` / `--ai codex` 下默认安装 prompts，并镜像到 commands
+- `-AiSkills` / `--ai-skills` 仅作为兼容空操作保留，不再触发 skills 安装
+- 当 `CODEX_HOME` 为空时，必须回退到默认 `.codex` 目录
+- 最终 prompts 目录必须解析为 `<codex_home>/prompts`
+- 最终 commands 目录必须解析为 `<codex_home>/commands`
+- 若发现遗留 `sp-*` skills，安装器必须清理并记录
+- 若发现遗留 `speckit.*` prompt/command 文件，安装器必须清理并记录
+- Codex 模式下，只有在项目资产、prompts 和 commands 都实际写出后，安装才算成功
+- 安装器必须输出 `/prompts:sp.specify`、`/prompts:sp.analyze` 等正确触发示例
+- manifest 必须记录 `codexPromptsDir`、`codexCommandsDir`、安装列表与遗留清理结果
 
 ## Non-Goals
 
-- 把 `install-manifest.json` 单独视为 Codex 集成完成的证明
-- 继续使用模糊文案，让用户自行猜测触发方式
-- 允许 Codex 模式在没有写出任何 `sp-*` 时仍显示成功
+- 把历史 `skills` 目录残留视为当前机制的一部分
+- 继续使用含糊文案，让用户自行猜测应该测试 `/sp.*`、`$sp-*` 还是 `/prompts:sp.*`
+- 允许只写 starter pack 或只写 commands 时仍显示 Codex 集成成功
 
 ## Evidence Snapshot
 
-- 用户提供的 `2026-04-06` Windows 复测显示，`172cfbc` 下的 `install.ps1` 只安装 starter pack，未安装任何 Codex skills
-- 当前仓库文档已经把 Codex 触发方式定义为 `$sp-*`
-- 当前仓库安装脚本已经包含 Codex 模式、路径解析、skills 安装、失败判定与 post-install 输出
+- 当前 README 与兼容文档把 Codex 入口统一定义为 `/prompts:sp.*`
+- 当前安装脚本会写入 `CODEX_HOME/prompts` 并同步镜像到 `CODEX_HOME/commands`
+- 当前安装脚本会清理旧 `speckit.*` prompt/command 文件
+- 当前安装脚本会清理遗留 `CODEX_HOME/skills/sp-*`
+- 当前仓库已删除 `installer-assets/codex-skills/` 下的分发内容
 
 ## Open Clarification Items
 
-- 是否还需要额外提供独立的 `install-codex-skills.ps1`，还是保留单脚本模式即可
-- 安装器是否必须要求 `codex` 命令存在于 `PATH` 中，还是允许先复制 skills、后由用户自行 reload
-- 非 Codex 模式下的 next steps 是否要进一步明确到具体 agent，而不是泛化为 `sp.specify`
+- `installer-assets/claude-commands/` 是否在后续重命名为更中性的 prompts 资产目录
+- 是否需要在后续版本里彻底移除 `--ai-skills` / `-AiSkills` 兼容参数
+- 是否需要补一份面向 Windows 的专门 smoke checklist，降低 Codex 回归成本

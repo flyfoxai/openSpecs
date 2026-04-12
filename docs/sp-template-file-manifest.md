@@ -42,33 +42,32 @@
 
 ## 2.2 skills 型 agent 模板
 
-这类模板面向 skills 型 agent。
+这类模板面向 prompts 型或 host-level command agent。
 
 当前至少应考虑：
 
 - Codex CLI
-- Antigravity (`agy`)
-- 其他支持 skills 或 prompt-pack 的 agent 包装形态
+- 其他支持 prompt-pack 的 agent 包装形态
 
-建议至少存在以下 skills 文件：
+建议至少存在以下 prompt 模板文件：
 
 | 命令 | 建议模板标识 |
 | --- | --- |
-| `$sp-constitution` | `sp-constitution` |
-| `$sp-specify` | `sp-specify` |
-| `$sp-clarify` | `sp-clarify` |
-| `$sp-flow` | `sp-flow` |
-| `$sp-ui` | `sp-ui` |
-| `$sp-gate` | `sp-gate` |
-| `$sp-bundle` | `sp-bundle` |
-| `$sp-plan` | `sp-plan` |
-| `$sp-tasks` | `sp-tasks` |
-| `$sp-analyze` | `sp-analyze` |
+| `/prompts:sp.constitution` | `sp.constitution.md` |
+| `/prompts:sp.specify` | `sp.specify.md` |
+| `/prompts:sp.clarify` | `sp.clarify.md` |
+| `/prompts:sp.flow` | `sp.flow.md` |
+| `/prompts:sp.ui` | `sp.ui.md` |
+| `/prompts:sp.gate` | `sp.gate.md` |
+| `/prompts:sp.bundle` | `sp.bundle.md` |
+| `/prompts:sp.plan` | `sp.plan.md` |
+| `/prompts:sp.tasks` | `sp.tasks.md` |
+| `/prompts:sp.analyze` | `sp.analyze.md` |
 
 说明：
 
-- Codex 与 slash command agent 应共用同一份正文逻辑
-- 其他 skills 型 agent 应优先复用同一套正文，再按 upstream 要求做外层包装
+- Codex 与 slash-command agent 应共用同一份正文逻辑
+- 其他 prompts 型 agent 应优先复用同一套正文，再按宿主要求做外层包装
 
 ## 2.3 generic agent 模板包装
 
@@ -963,7 +962,7 @@ stateDiagram-v2
 
 模板层完成后，至少检查：
 
-- slash command 与 Codex skills 是否共用同一逻辑
+- slash command 与 Codex Desktop prompts 是否共用同一逻辑
 - `sp.gate` 是否吸收 `checklist` 语义
 - `sp.plan / sp.tasks / sp.analyze` 是否仍被约束在文档阶段
 - 文档工作流是否在 `sp.analyze` 处结束

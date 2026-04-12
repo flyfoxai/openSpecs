@@ -6,6 +6,12 @@
 
 `sp` 当前阶段只覆盖文档工作流，不定义任何生产代码流程。
 
+补充：
+
+- `sp.implement` 可视为后续规划中的实现阶段入口
+- 但它不属于当前这份文档阶段规范
+- 当前规范只覆盖到 `sp.analyze`
+
 当前阶段纳入的命令：
 
 - `sp.constitution`
@@ -39,7 +45,7 @@
 - 在原有 `specify / clarify / plan / tasks / analyze` 之间插入 `flow / ui / gate / bundle`
 - 把 `plan / tasks / analyze` 明确归类为文档工作，不再默认视为实现前置步骤
 - 将原版偏检查清单语义的 `checklist` 能力并入 `sp.gate`
-- 保留 Codex skills 模式，不强行统一为 slash command
+- 将 Codex 入口统一收敛为 Desktop prompts，不再分发独立 skills 包装
 
 ## 3. 总体工作流
 
@@ -199,12 +205,12 @@ feature 级 `memory/` 当前建议包含：
 为了兼容不同 agent，`sp` 的调用形式分两类：
 
 - 支持 slash command 的 agent：`/sp.<command>`
-- Codex skills 模式：`$sp-<command>`
+- Codex Desktop prompts：`/prompts:sp.<command>`
 
 示例：
 
 - Claude / Cursor / Copilot / Gemini：`/sp.specify`
-- Codex：`$sp-specify`
+- Codex：`/prompts:sp.specify`
 
 ## 3.5 查询优先、规模触发与上下文预算硬约束
 
@@ -706,7 +712,7 @@ specs/<feature>/
 兼容说明：
 
 - `sp.gate` 吸收原版 `/speckit.checklist` 的校验入口语义
-- 如需平滑迁移，可在实现期保留 `/sp.checklist` 作为 `/sp.gate` 的兼容别名
+- 当前核心规范只使用 `sp.gate`，不再把 `/sp.checklist` 作为并行入口写入规范正文
 
 命令模板提示重点：
 
@@ -992,32 +998,32 @@ specs/<feature>/
 说明：
 
 - slash command agent 采用 `/sp.*`
-- Codex skills 模式采用 `$sp-*`
+- Codex Desktop prompts 采用 `/prompts:sp.*`
 - 下表按原版触发语法分别映射
 
 | 原版命令 | `sp` 命令 | 当前阶段定位 |
 | --- | --- | --- |
 | `/speckit.constitution` | `/sp.constitution` | 文档工作 |
-| `$speckit-constitution` | `$sp-constitution` | 文档工作 |
+| `/prompts:speckit.constitution` | `/prompts:sp.constitution` | 文档工作 |
 | `/speckit.specify` | `/sp.specify` | 文档工作 |
-| `$speckit-specify` | `$sp-specify` | 文档工作 |
+| `/prompts:speckit.specify` | `/prompts:sp.specify` | 文档工作 |
 | `/speckit.clarify` | `/sp.clarify` | 文档工作 |
-| `$speckit-clarify` | `$sp-clarify` | 文档工作 |
+| `/prompts:speckit.clarify` | `/prompts:sp.clarify` | 文档工作 |
 | `/speckit.checklist` | `/sp.gate` | 文档工作 |
 | 无 | `/sp.flow` | 文档工作 |
-| 无 | `$sp-flow` | 文档工作 |
+| 无 | `/prompts:sp.flow` | 文档工作 |
 | 无 | `/sp.ui` | 文档工作 |
-| 无 | `$sp-ui` | 文档工作 |
+| 无 | `/prompts:sp.ui` | 文档工作 |
 | 无 | `/sp.gate` | 文档工作 |
-| 无 | `$sp-gate` | 文档工作 |
+| 无 | `/prompts:sp.gate` | 文档工作 |
 | 无 | `/sp.bundle` | 文档工作 |
-| 无 | `$sp-bundle` | 文档工作 |
+| 无 | `/prompts:sp.bundle` | 文档工作 |
 | `/speckit.plan` | `/sp.plan` | 文档工作 |
-| `$speckit-plan` | `$sp-plan` | 文档工作 |
+| `/prompts:speckit.plan` | `/prompts:sp.plan` | 文档工作 |
 | `/speckit.tasks` | `/sp.tasks` | 文档工作 |
-| `$speckit-tasks` | `$sp-tasks` | 文档工作 |
+| `/prompts:speckit.tasks` | `/prompts:sp.tasks` | 文档工作 |
 | `/speckit.analyze` | `/sp.analyze` | 文档工作 |
-| `$speckit-analyze` | `$sp-analyze` | 文档工作 |
+| `/prompts:speckit.analyze` | `/prompts:sp.analyze` | 文档工作 |
 
 ## 8. 本阶段交付边界
 

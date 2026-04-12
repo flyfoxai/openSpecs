@@ -9,8 +9,7 @@
 后续 fork 原版 `Spec Kit` 时，可将这里的正文迁移到不同 agent 的命令模板文件中：
 
 - slash command agent 使用 `/sp.*`
-- skills 型 agent 按 upstream 原方式安装
-- Codex skills 模式使用 `$sp-*`
+- Codex Desktop prompts 使用 `/prompts:sp.*`
 
 要求：
 
@@ -61,7 +60,7 @@ If required inputs are missing or unstable, stop and report the gap explicitly.
 调用形式：
 
 - slash command agent: `/sp.constitution`
-- Codex skills: `$sp-constitution`
+- Codex Desktop prompts: `/prompts:sp.constitution`
 
 正文草案：
 
@@ -110,7 +109,7 @@ Next
 调用形式：
 
 - slash command agent: `/sp.specify`
-- Codex skills: `$sp-specify`
+- Codex Desktop prompts: `/prompts:sp.specify`
 
 正文草案：
 
@@ -160,7 +159,7 @@ Next
 调用形式：
 
 - slash command agent: `/sp.clarify`
-- Codex skills: `$sp-clarify`
+- Codex Desktop prompts: `/prompts:sp.clarify`
 
 正文草案：
 
@@ -263,7 +262,7 @@ Next
 调用形式：
 
 - slash command agent: `/sp.flow`
-- Codex skills: `$sp-flow`
+- Codex Desktop prompts: `/prompts:sp.flow`
 
 正文草案：
 
@@ -314,7 +313,7 @@ Next
 调用形式：
 
 - slash command agent: `/sp.ui`
-- Codex skills: `$sp-ui`
+- Codex Desktop prompts: `/prompts:sp.ui`
 
 正文草案：
 
@@ -370,7 +369,7 @@ Next
 调用形式：
 
 - slash command agent: `/sp.gate`
-- Codex skills: `$sp-gate`
+- Codex Desktop prompts: `/prompts:sp.gate`
 
 正文草案：
 
@@ -440,7 +439,7 @@ Next
 调用形式：
 
 - slash command agent: `/sp.bundle`
-- Codex skills: `$sp-bundle`
+- Codex Desktop prompts: `/prompts:sp.bundle`
 
 正文草案：
 
@@ -500,7 +499,7 @@ Next
 调用形式：
 
 - slash command agent: `/sp.plan`
-- Codex skills: `$sp-plan`
+- Codex Desktop prompts: `/prompts:sp.plan`
 
 正文草案：
 
@@ -576,7 +575,7 @@ Next
 调用形式：
 
 - slash command agent: `/sp.tasks`
-- Codex skills: `$sp-tasks`
+- Codex Desktop prompts: `/prompts:sp.tasks`
 
 正文草案：
 
@@ -625,7 +624,7 @@ Next
 调用形式：
 
 - slash command agent: `/sp.analyze`
-- Codex skills: `$sp-analyze`
+- Codex Desktop prompts: `/prompts:sp.analyze`
 
 正文草案：
 
@@ -687,7 +686,7 @@ Next
 
 1. 先将全局约束写入 constitution 与命令模板公共片段
 2. 再落地 `sp.specify` 到 `sp.analyze` 的 agent 命令文件
-3. 最后分别为 slash command agent 与 Codex skills 补目录包装
+3. 最后分别为 slash command agent 与 Codex Desktop prompts 补目录包装
 
 迁移时应保持：
 

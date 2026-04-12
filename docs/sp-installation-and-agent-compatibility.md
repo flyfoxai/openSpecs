@@ -118,14 +118,13 @@ specify init --here --force --ai claude
 3. 初始化出的命令文件内容按 agent 类型分别写入：
    - slash command agent 使用 `/sp.*`
    - Codex Desktop prompts 使用 `/prompts:sp.*`
-   - Codex skills 模式使用 `$sp-*`
 
 这样做的好处：
 
 - 安装链路与原版一致
 - 升级链路与原版一致
 - 真正自定义的部分集中在模板层，而不是 CLI 层
-- 不会为了统一外观而破坏 Codex 原有 skills 工作方式
+- 不会为了额外包装层而放大宿主兼容风险
 
 ## 5. Agent 兼容要求
 
@@ -171,8 +170,7 @@ specify init --here --force --ai claude
 
 - 大多数支持 slash command 的 agent 使用 `/sp.*`
 - Codex Desktop prompts 使用 `/prompts:sp.*`
-- Codex skills 模式使用 `$sp-*`
-- 不应把 Codex 视为唯一的 skills 型 agent
+- 当前仓库不再分发 Codex skills，Codex 运行时只走 prompts/commands
 - 命令参数写法尽量简单，避免依赖少数 agent 才支持的复杂自定义参数
 - 命令模板内容应尽量将“输入说明”和“执行步骤”写在命令文本内部，而不是假设 agent 自己知道上下文
 - 对于未内置但可自定义命令目录的 agent，应保留 generic 接入能力
@@ -200,7 +198,7 @@ fork 时建议延续原版“按 agent 写入不同命令目录”的方式。
 - 不强求所有 agent 共享同一种触发语法
 - agent 覆盖面应尽量跟随上游 `AGENT_CONFIG`
 
-## 7. Skills 型 Agent 兼容要求
+## 7. 上游 skills 背景与当前 fork 取舍
 
 上游当前已明确并非所有 agent 都使用 slash command。
 
@@ -209,38 +207,38 @@ fork 时建议延续原版“按 agent 写入不同命令目录”的方式。
 - Codex CLI：在 upstream 里可见 `--ai-skills` 这一类 skills 开关
 - Antigravity (`agy`)：需要 `--ai-skills`
 
-其中 Codex 还有额外要求：
+但当前 fork 对 Codex 的运行策略已经收敛为 prompts-only，原因是：
+
+- `sp.*` 的正文逻辑已经完整落在 prompt 文件和项目资产层
+- 额外的 skills 包装不再提供独有资产，只会增加安装、发现和宿主调用链复杂度
+- Codex Desktop 的真实用户入口是 `/prompts:sp.*`
+
+因此当前 Codex 的实现要求是：
 
 - 检测 `codex` 工具是否存在
 - 优先读取 `CODEX_HOME`
 - 若 `CODEX_HOME` 为空，则回退到系统默认目录
 - Windows: `%USERPROFILE%\.codex`
 - macOS / Linux: `~/.codex`
-- 最终 skills 安装目录为 `<codex_home>/skills`
 - 最终 Codex Desktop prompts 主安装目录为 `<codex_home>/prompts`
 - `<codex_home>/commands` 作为兼容镜像目录同步写入
 - 两个目录若不存在，应主动创建
 - 若目录仍无法解析或不可写，应直接报错
 - 当前 fork 的安装脚本应支持 `--ai codex` 直接进入 Codex 集成模式
 - `--ai-skills` 在当前 fork 中只保留为兼容别名，不应再成为隐藏前提
-- 将命令同时安装为 Codex Desktop prompts 与 Codex skills，并分别采用 `/prompts:sp.*` 与 `$sp-*` 调用方式
+- 将命令安装为 Codex Desktop prompts，并同步镜像到 `commands`
+- 若发现遗留 `sp-*` skills，应在安装时清理并记录到 manifest
 - 升级后提醒用户重载 workspace 或重新打开 agent
-
-skills 型 agent 的实现约束：
-
-- 不应把 skills 型 agent 强行改成 slash command 模式
-- 命令安装方式应遵循上游对该 agent 的原有模式
-- 若 fork 延续原版多 agent 模板目录，应把 skills 模板与 slash command 模板分开维护
 
 Codex 的额外实现约束：
 
-- 命令文件命名应与 `/prompts:sp.*` 和 `$sp-*` 调用方式一致
+- 命令文件命名应与 `/prompts:sp.*` 调用方式一致
 - 选择 Codex 模式后，“安装成功”必须同时满足：
 - 项目内模板已生成
 - `sp.*` prompts 已实际写入 Codex prompts 目录
 - `sp.*` prompts 已同步写入 Codex commands 兼容目录
-- `sp-*` skills 已实际写入 Codex skills 目录
-- 安装器输出实际写入的 prompt 与 skill 列表和触发示例
+- 遗留 `sp-*` skills 若存在已被清理
+- 安装器输出实际写入的 prompt 列表和触发示例
 
 ## 7.1 Generic Agent 兼容要求
 

@@ -29,7 +29,7 @@ OpenSpecs 引入了强约定的 `.specify/memory` 路由表。Agent 进来后第
 当需求庞大时，框架会自动进行任务切块（Workset）。AI 每次干活只背负当前闭环区域的上下文，就像微服务一样解耦了思维包袱。
 
 **4. 全平台无缝兼容的协议层**
-底层规范核心始终是 `sp.*`。无论你是用 Claude Code 敲 `/sp.specify`，还是用 Codex 敲 `$sp-specify`，它都能完美自动适配。
+底层规范核心始终是 `sp.*`。无论你是用 Claude Code 敲 `/sp.specify`，还是用 Codex 敲 `/prompts:sp.specify`，它都能完美自动适配。
 
 ---
 **AI 拥有极速产出代码的能力，但缺乏人类工程师的严谨与克制。** 

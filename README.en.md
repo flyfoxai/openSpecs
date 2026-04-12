@@ -1,4 +1,4 @@
-# `speckit-layered`
+# OpenSpecs (Speckit Layered)
 
 `sp` is a layered documentation workflow adapted from `Spec Kit`.
 The framework step names stay in `sp.*`; each agent only changes how those steps are triggered.
@@ -7,7 +7,7 @@ Upstream original repository: `https://github.com/github/spec-kit`
 
 Its goal is not to jump straight from a raw request to code. It first turns a project into a queryable, traceable, incremental documentation skeleton so a model can work on one local area at a time under limited context.
 
-The current phase covers documentation only. The workflow ends at `sp.analyze` and does not include implementation.
+The current phase covers documentation only. The workflow ends at `sp.analyze`. A later implementation-stage step such as `sp.implement` is intentionally out of scope for this repository.
 
 ## What It Solves
 
@@ -61,6 +61,8 @@ curl -fsSL https://raw.githubusercontent.com/flyfoxai/openSpecs/main/scripts/ins
 SP_INSTALL_AI=codex curl -fsSL https://raw.githubusercontent.com/flyfoxai/openSpecs/main/scripts/install.sh | sh -s -- --archive-url https://github.com/flyfoxai/openSpecs/archive/refs/heads/main.tar.gz ./your-project
 ```
 
+These examples use the live `main` branch archive for convenience. For stable installs, replace the archive URL with a release or tag archive URL that matches the version you want to pin.
+
 Windows local install:
 
 ```powershell
@@ -80,19 +82,33 @@ $env:SP_INSTALL_ARCHIVE_URL="https://github.com/flyfoxai/openSpecs/archive/refs/
 $env:SP_INSTALL_ARCHIVE_URL="https://github.com/flyfoxai/openSpecs/archive/refs/heads/main.zip"; $env:SP_INSTALL_TARGET_DIR="C:\path\to\your-project"; $env:SP_INSTALL_AI="codex"; irm https://raw.githubusercontent.com/flyfoxai/openSpecs/main/scripts/install.ps1 | iex
 ```
 
+The same recommendation applies on Windows: `main.zip` is the moving branch example, while release or tag archives are better for reproducible installs.
+
 If no directory is provided, installation defaults to the current directory. Confirmation is required by default unless `--yes`, `-Yes`, or an explicit environment override is used.
 
 Codex integration notes:
 
 - `sp.specify` and `sp.analyze` are framework step names
 - Codex Desktop prompts use `/prompts:sp.*`
-- Codex uses `$sp-*` triggers
 - slash-command agents use `/sp.*`
-- Starter-pack-only installs do not write Codex prompts or skills
-- The installer installs Codex Desktop prompts and Codex skills by default when `--ai codex` or `-Ai codex` is used
+- Starter-pack-only installs do not write Codex prompts
+- The installer installs Codex Desktop prompts and a compatibility commands mirror when `--ai codex` or `-Ai codex` is used
 - The remote one-command Codex path uses `SP_INSTALL_AI=codex`
 - The installer installs Claude slash commands by default when `--ai claude` or `-Ai claude` is used
-- In Codex mode, installation is successful only when project templates are written, `/prompts:sp.*` files exist in `CODEX_HOME/prompts`, mirrored copies exist in `CODEX_HOME/commands`, and actual `sp-*` skills are written
+- In Codex mode, installation is successful only when project templates are written, `/prompts:sp.*` files exist in `CODEX_HOME/prompts`, mirrored copies exist in `CODEX_HOME/commands`, and any legacy `sp-*` skill directories are removed
+
+Quick Codex post-install checks:
+
+```bash
+ls "${CODEX_HOME:-$HOME/.codex}/prompts" | grep '^sp\.'
+ls "${CODEX_HOME:-$HOME/.codex}/commands" | grep '^sp\.'
+```
+
+```powershell
+$codexHome = if ($env:CODEX_HOME) { $env:CODEX_HOME } else { Join-Path $HOME ".codex" }
+Get-ChildItem (Join-Path $codexHome "prompts") -Filter "sp.*.md"
+Get-ChildItem (Join-Path $codexHome "commands") -Filter "sp.*.md"
+```
 
 ## Best Fit
 

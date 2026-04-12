@@ -242,8 +242,8 @@ specs/<feature>/
 改造原则：
 
 - slash command agent 的命令名统一换成 `/sp.*`
-- Codex 保持 skills 模式，使用 `$sp-*`
-- 不应把 Codex 误当作唯一的 skills 型 agent
+- Codex Desktop 使用 `/prompts:sp.*`
+- 当前仓库不再分发 Codex skills 包装
 - 不同 agent 的命令正文尽量保持一致
 - 保留 agent 专用目录写入机制
 - Codex 兼容时要考虑 `CODEX_HOME`
@@ -265,8 +265,7 @@ specs/<feature>/
 
 并且要满足：
 
-- slash command 版本与 Codex skills 版本正文语义一致
-- 其他需要 skills 的 agent 也应复用同一正文逻辑
+- slash command 版本与 Codex Desktop prompt 版本正文语义一致
 - 差异只放在触发语法和 agent 特定目录结构，不放在工作逻辑上
 - 每一步都要像原版 `Spec Kit` 那样给出充分的过程提示，而不是只留一句命令标题
 - `sp.analyze` 不能退化成自由发挥的总结，必须固定输出最终结论和缺口分类，便于不同 feature 横向比较
@@ -284,7 +283,7 @@ specs/<feature>/
 
 这样未来同步上游时，主要冲突点会集中在：
 
-- slash command 文件和 Codex skills 文件
+- slash command 文件和 Codex Desktop prompt 文件
 - `.specify/templates/`
 - `.specify/memory/constitution.md`
 

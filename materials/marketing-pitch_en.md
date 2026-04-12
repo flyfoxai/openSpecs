@@ -29,7 +29,7 @@ OpenSpecs introduces a strictly defined `.specify/memory` routing table. When an
 When a requirement is massive, the framework automatically chunks tasks (Worksets). Each time the AI works, it only carries the context for the current closed-loop area, decoupling mental baggage just like microservices do.
 
 **4. Fully Compatible Platform Protocol Layer**
-The core underlying standard is always `sp.*`. Whether you type `/sp.specify` in Claude Code or `$sp-specify` in Codex, it adapts perfectly and seamlessly.
+The core underlying standard is always `sp.*`. Whether you type `/sp.specify` in Claude Code or `/prompts:sp.specify` in Codex, it adapts perfectly and seamlessly.
 
 ---
 **AI has the capability to churn out code at lightning speed, but it lacks the rigor and restraint of human engineers.**

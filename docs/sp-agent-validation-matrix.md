@@ -37,20 +37,19 @@
 - 当前平台脚本类型正确
 - 工作区已初始化
 - 升级后是否需要 reload / restart
-- 若为 skills 模式，skills 目录是否已正确配置
+- 若为 Codex 模式，`CODEX_HOME/prompts` 与 `CODEX_HOME/commands` 是否已正确配置
 
 ## 4. 核心矩阵
 
 | Agent | 类型 | 初始化命令模式 | 触发方式 | 安装落位 | 刷新要求 | 核心检查点 |
 | --- | --- | --- | --- | --- | --- | --- |
 | Claude Code | slash command | `specify init . --ai <agent-id-from-upstream> --script <sh-or-ps>` | `/sp.*` | Claude 命令目录 | 通常需要刷新工作区 | 命令可见、active feature 可读、输出落到 `specs/<feature>/` |
-| Codex CLI | skills | `specify init . --ai codex --script <sh-or-ps>` | `$sp-*` | Codex skills 目录 | 通常需要 reload workspace | `CODEX_HOME` 可用、skills 已安装、命令名与文件名一致；`--ai-skills` 仅作兼容别名 |
+| Codex CLI / Desktop | prompts | `specify init . --ai codex --script <sh-or-ps>` | `/prompts:sp.*` | `CODEX_HOME/prompts`，并镜像到 `CODEX_HOME/commands` | 通常需要 reload workspace | `CODEX_HOME` 可用、prompts 已安装、commands 镜像存在、旧 `speckit.*` 与遗留 `sp-*` skills 已清理；`--ai-skills` 仅作兼容空操作 |
 | Gemini CLI | slash command | `specify init . --ai <agent-id-from-upstream> --script <sh-or-ps>` | `/sp.*` | Gemini 命令目录 | 通常需要刷新命令缓存 | slash command 可见、文档输出完整 |
 | Kiro CLI | slash command | `specify init . --ai <agent-id-from-upstream> --script <sh-or-ps>` | `/sp.*` | Kiro 命令目录 | 通常需要刷新工作区 | 命令目录写入正确、`sp.flow` 和 `sp.ui` 可触发 |
 | Windsurf | slash command | `specify init . --ai <agent-id-from-upstream> --script <sh-or-ps>` | `/sp.*` | Windsurf 命令目录 | 通常需要 reload | 命令注册成功、`sp.gate` 和 `sp.bundle` 输出正确 |
 | Roo Code | slash command | `specify init . --ai <agent-id-from-upstream> --script <sh-or-ps>` | `/sp.*` | Roo Code 命令目录 | 通常需要 reload | 命令可见、第二层文档命令仍不写代码 |
 | Kilo Code | slash command | `specify init . --ai <agent-id-from-upstream> --script <sh-or-ps>` | `/sp.*` | Kilo Code 命令目录 | 通常需要 reload | `sp.plan / sp.tasks / sp.analyze` 输出符合文档边界 |
-| Antigravity (`agy`) | skills | `specify init . --ai <agent-id-from-upstream> --ai-skills --script <sh-or-ps>` | 依 upstream skills 方式触发 | 对应 skills 目录 | 通常需要 reload | skills 安装成功、正文逻辑与 Codex 版本一致 |
 | Generic | generic | `specify init . --ai generic --ai-commands-dir <path> --script <sh-or-ps>` | 由宿主 agent 决定 | 用户指定目录 | 由宿主 agent 决定 | 模板可被外部目录直接消费，不依赖厂商专属逻辑 |
 
 ## 5. 单 agent 验证步骤

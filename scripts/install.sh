@@ -9,7 +9,8 @@ ARCHIVE_URL="${SP_INSTALL_ARCHIVE_URL:-}"
 TARGET_DIR="${SP_INSTALL_TARGET_DIR:-.}"
 AUTO_YES="${SP_INSTALL_AUTO_YES:-0}"
 AI_TARGET="${SP_INSTALL_AI:-}"
-INSTALL_CODEX_SKILLS="${SP_INSTALL_AI_SKILLS:-0}"
+INSTALL_CODEX_PROMPTS=0
+AI_SKILLS_REQUESTED="${SP_INSTALL_AI_SKILLS:-0}"
 INSTALL_CLAUDE_COMMANDS=0
 DOWNLOAD_DIR=""
 DETECTED_CODEX_HOME="${CODEX_HOME:-}"
@@ -17,12 +18,12 @@ RESOLVED_CODEX_HOME=""
 RESOLVED_CODEX_SKILLS_DIR=""
 RESOLVED_CODEX_PROMPTS_DIR=""
 RESOLVED_CODEX_COMMANDS_DIR=""
-INSTALLED_SKILLS=""
-INSTALLED_SKILLS_JSON=""
 INSTALLED_CODEX_PROMPTS=""
 INSTALLED_CODEX_PROMPTS_JSON=""
 INSTALLED_CODEX_COMMANDS=""
 INSTALLED_CODEX_COMMANDS_JSON=""
+REMOVED_LEGACY_CODEX_SKILLS=""
+REMOVED_LEGACY_CODEX_SKILLS_JSON=""
 REMOVED_LEGACY_CODEX_PROMPTS=""
 REMOVED_LEGACY_CODEX_PROMPTS_JSON=""
 REMOVED_LEGACY_CODEX_COMMANDS=""
@@ -54,9 +55,9 @@ Behavior:
   - macOS/Linux local mode copies assets from the current repository.
   - curl|sh mode requires --archive-url or SP_INSTALL_ARCHIVE_URL.
   - Remote mode can also use SP_INSTALL_TARGET_DIR and SP_INSTALL_AUTO_YES.
-  - --ai codex installs Codex sp-* skills, primary Codex Desktop /prompts:sp.* prompts, and a compatibility commands mirror.
+  - --ai codex installs primary Codex Desktop /prompts:sp.* prompts and a compatibility commands mirror.
   - --ai claude installs /sp.* slash commands into .claude/commands in the target project.
-  - --ai-skills is kept only as a compatibility alias for Codex mode.
+  - --ai-skills is deprecated, ignored, and kept only as a compatibility no-op for Codex mode.
 EOF
 }
 
@@ -81,7 +82,7 @@ abs_path() {
   fi
 }
 
-codex_skill_slugs() {
+legacy_codex_skill_slugs() {
   cat <<'EOF'
 sp-constitution
 sp-specify
@@ -201,7 +202,7 @@ resolve_codex_paths() {
     RESOLVED_CODEX_HOME="$DETECTED_CODEX_HOME"
   else
     if [ -z "${HOME:-}" ]; then
-      echo "error: Codex skills installation failed: unable to resolve home directory for default ~/.codex fallback." >&2
+      echo "error: Codex prompt installation failed: unable to resolve home directory for default ~/.codex fallback." >&2
       exit 1
     fi
     RESOLVED_CODEX_HOME="$HOME/.codex"
@@ -211,64 +212,38 @@ resolve_codex_paths() {
   RESOLVED_CODEX_PROMPTS_DIR="$RESOLVED_CODEX_HOME/prompts"
   RESOLVED_CODEX_COMMANDS_DIR="$RESOLVED_CODEX_HOME/commands"
 
-  if [ -z "$RESOLVED_CODEX_SKILLS_DIR" ]; then
-    echo "error: Codex skills installation failed: resolved skills directory missing or empty." >&2
+  if [ -z "$RESOLVED_CODEX_HOME" ]; then
+    echo "error: Codex prompt installation failed: resolved Codex home directory missing or empty." >&2
     exit 1
   fi
 }
 
-install_codex_skills() {
-  if ! command -v codex >/dev/null 2>&1; then
-    echo "error: Codex skills installation failed: 'codex' command not found in PATH." >&2
-    exit 1
+remove_legacy_codex_skills() {
+  REMOVED_LEGACY_CODEX_SKILLS=""
+  REMOVED_LEGACY_CODEX_SKILLS_JSON=""
+
+  if [ -z "$RESOLVED_CODEX_SKILLS_DIR" ] || [ ! -d "$RESOLVED_CODEX_SKILLS_DIR" ]; then
+    return 0
   fi
 
-  resolve_codex_paths
-
-  SKILL_SOURCE_ROOT="$SOURCE_ROOT/installer-assets/codex-skills"
-  if [ ! -d "$SKILL_SOURCE_ROOT" ]; then
-    echo "error: Codex skills installation failed: missing installer-assets/codex-skills in source." >&2
-    exit 1
-  fi
-
-  if ! mkdir -p "$RESOLVED_CODEX_SKILLS_DIR"; then
-    echo "error: Codex skills installation failed: resolved skills directory missing or unwritable: $RESOLVED_CODEX_SKILLS_DIR" >&2
-    exit 1
-  fi
-
-  INSTALLED_SKILLS=""
-  INSTALLED_SKILLS_JSON=""
-
-  for slug in $(codex_skill_slugs); do
-    src="$SKILL_SOURCE_ROOT/$slug"
-    dest="$RESOLVED_CODEX_SKILLS_DIR/$slug"
-
-    if [ ! -f "$src/SKILL.md" ]; then
-      echo "error: Codex skills installation failed: missing source skill file for $slug" >&2
-      exit 1
-    fi
-
-    copy_tree "$src" "$dest"
-
-    if [ ! -f "$dest/SKILL.md" ]; then
-      echo "error: Codex skills installation failed: failed to write $slug into $RESOLVED_CODEX_SKILLS_DIR" >&2
-      exit 1
-    fi
-
-    if [ -n "$INSTALLED_SKILLS" ]; then
-      INSTALLED_SKILLS="$INSTALLED_SKILLS
+  for slug in $(legacy_codex_skill_slugs); do
+    legacy_skill_dir="$RESOLVED_CODEX_SKILLS_DIR/$slug"
+    if [ -d "$legacy_skill_dir" ]; then
+      rm -rf "$legacy_skill_dir"
+      if [ -d "$legacy_skill_dir" ]; then
+        echo "error: Codex prompt installation failed: unable to remove legacy skill $slug from $RESOLVED_CODEX_SKILLS_DIR" >&2
+        exit 1
+      fi
+      if [ -n "$REMOVED_LEGACY_CODEX_SKILLS" ]; then
+        REMOVED_LEGACY_CODEX_SKILLS="$REMOVED_LEGACY_CODEX_SKILLS
 $slug"
-      INSTALLED_SKILLS_JSON="$INSTALLED_SKILLS_JSON, \"$slug\""
-    else
-      INSTALLED_SKILLS="$slug"
-      INSTALLED_SKILLS_JSON="\"$slug\""
+        REMOVED_LEGACY_CODEX_SKILLS_JSON="$REMOVED_LEGACY_CODEX_SKILLS_JSON, \"$slug\""
+      else
+        REMOVED_LEGACY_CODEX_SKILLS="$slug"
+        REMOVED_LEGACY_CODEX_SKILLS_JSON="\"$slug\""
+      fi
     fi
   done
-
-  if [ -z "$INSTALLED_SKILLS" ]; then
-    echo "error: Codex skills installation failed: no sp-* skills were written to $RESOLVED_CODEX_SKILLS_DIR" >&2
-    exit 1
-  fi
 }
 
 install_codex_commands() {
@@ -292,10 +267,14 @@ install_codex_commands() {
   INSTALLED_CODEX_PROMPTS_JSON=""
   INSTALLED_CODEX_COMMANDS=""
   INSTALLED_CODEX_COMMANDS_JSON=""
+  REMOVED_LEGACY_CODEX_SKILLS=""
+  REMOVED_LEGACY_CODEX_SKILLS_JSON=""
   REMOVED_LEGACY_CODEX_PROMPTS=""
   REMOVED_LEGACY_CODEX_PROMPTS_JSON=""
   REMOVED_LEGACY_CODEX_COMMANDS=""
   REMOVED_LEGACY_CODEX_COMMANDS_JSON=""
+
+  remove_legacy_codex_skills
 
   for filename in $(legacy_codex_command_files); do
     legacy_name="${filename%.md}"
@@ -464,15 +443,16 @@ write_install_manifest() {
     if [ -n "$AI_TARGET" ]; then
       echo "  ,\"ai\": \"$AI_TARGET\""
     fi
-    if [ "$INSTALL_CODEX_SKILLS" -eq 1 ]; then
+    if [ "$INSTALL_CODEX_PROMPTS" -eq 1 ]; then
       echo "  ,\"detectedCodexHome\": \"${DETECTED_CODEX_HOME:-}\""
       echo "  ,\"codexHome\": \"$RESOLVED_CODEX_HOME\""
-      echo "  ,\"codexSkillsDir\": \"$RESOLVED_CODEX_SKILLS_DIR\""
       echo "  ,\"codexPromptsDir\": \"$RESOLVED_CODEX_PROMPTS_DIR\""
       echo "  ,\"codexCommandsDir\": \"$RESOLVED_CODEX_COMMANDS_DIR\""
-      echo "  ,\"installedSkills\": [$INSTALLED_SKILLS_JSON]"
       echo "  ,\"installedCodexPrompts\": [$INSTALLED_CODEX_PROMPTS_JSON]"
       echo "  ,\"installedCodexCommands\": [$INSTALLED_CODEX_COMMANDS_JSON]"
+      if [ -n "$REMOVED_LEGACY_CODEX_SKILLS_JSON" ]; then
+        echo "  ,\"removedLegacyCodexSkills\": [$REMOVED_LEGACY_CODEX_SKILLS_JSON]"
+      fi
       if [ -n "$REMOVED_LEGACY_CODEX_PROMPTS_JSON" ]; then
         echo "  ,\"removedLegacyCodexPrompts\": [$REMOVED_LEGACY_CODEX_PROMPTS_JSON]"
       fi
@@ -514,15 +494,14 @@ This will install or refresh:
   - .sp/install-manifest.json
 EOF
 
-  if [ "$INSTALL_CODEX_SKILLS" -eq 1 ]; then
+  if [ "$INSTALL_CODEX_PROMPTS" -eq 1 ]; then
     cat <<EOF >&3
-  - Codex skills: $(printf '%s' "$INSTALLED_SKILL_NAMES_PREVIEW")
   - Codex Desktop prompts: $(printf '%s' "$INSTALLED_CODEX_COMMAND_NAMES_PREVIEW")
 
 Codex integration:
   detected CODEX_HOME: ${DETECTED_CODEX_HOME:-<empty>}
   resolved Codex home: $RESOLVED_CODEX_HOME
-  resolved skills directory: $RESOLVED_CODEX_SKILLS_DIR
+  legacy skills directory (cleanup only): $RESOLVED_CODEX_SKILLS_DIR
   resolved prompts directory: $RESOLVED_CODEX_PROMPTS_DIR
   compatibility commands directory: $RESOLVED_CODEX_COMMANDS_DIR
 EOF
@@ -565,10 +544,10 @@ else
   AUTO_YES=0
 fi
 
-if is_yes_value "$INSTALL_CODEX_SKILLS"; then
-  INSTALL_CODEX_SKILLS=1
+if is_yes_value "$AI_SKILLS_REQUESTED"; then
+  AI_SKILLS_REQUESTED=1
 else
-  INSTALL_CODEX_SKILLS=0
+  AI_SKILLS_REQUESTED=0
 fi
 
 while [ "$#" -gt 0 ]; do
@@ -594,7 +573,7 @@ while [ "$#" -gt 0 ]; do
       shift 2
       ;;
     --ai-skills)
-      INSTALL_CODEX_SKILLS=1
+      AI_SKILLS_REQUESTED=1
       shift
       ;;
     --help|-h)
@@ -635,21 +614,24 @@ if [ -n "$AI_TARGET" ] && [ "$AI_TARGET" != "codex" ] && [ "$AI_TARGET" != "clau
 fi
 
 if [ "$AI_TARGET" = "codex" ]; then
-  INSTALL_CODEX_SKILLS=1
+  INSTALL_CODEX_PROMPTS=1
 fi
 
 if [ "$AI_TARGET" = "claude" ]; then
   INSTALL_CLAUDE_COMMANDS=1
 fi
 
-if [ "$INSTALL_CODEX_SKILLS" -eq 1 ] && [ "$AI_TARGET" != "codex" ]; then
+if [ "$AI_SKILLS_REQUESTED" -eq 1 ] && [ "$AI_TARGET" != "codex" ]; then
   echo "error: --ai-skills currently requires --ai codex." >&2
   exit 1
 fi
 
-if [ "$INSTALL_CODEX_SKILLS" -eq 1 ]; then
+if [ "$AI_SKILLS_REQUESTED" -eq 1 ]; then
+  echo "warning: --ai-skills is deprecated and ignored. Codex now installs /prompts:sp.* only." >&2
+fi
+
+if [ "$INSTALL_CODEX_PROMPTS" -eq 1 ]; then
   resolve_codex_paths
-  INSTALLED_SKILL_NAMES_PREVIEW="$(printf '%s' "$(codex_skill_slugs)" | tr '\n' ' ' | sed 's/[[:space:]][[:space:]]*/ /g; s/[[:space:]]$//')"
   INSTALLED_CODEX_COMMAND_NAMES_PREVIEW="$(printf '%s' "$(sp_command_files)" | sed 's/\.md$//g' | tr '\n' ' ' | sed 's/[[:space:]][[:space:]]*/ /g; s/[[:space:]]$//')"
 fi
 
@@ -673,8 +655,7 @@ copy_tree "$SOURCE_ROOT/layer-2-delivery" "$TARGET_ABS/layer-2-delivery"
 copy_tree "$SOURCE_ROOT/installer-assets/project/.specify/memory" "$TARGET_ABS/.specify/memory"
 mkdir -p "$TARGET_ABS/specs"
 
-if [ "$INSTALL_CODEX_SKILLS" -eq 1 ]; then
-  install_codex_skills
+if [ "$INSTALL_CODEX_PROMPTS" -eq 1 ]; then
   install_codex_commands
 fi
 
@@ -687,19 +668,14 @@ write_install_manifest
 echo "sp document-stage starter pack installed to:"
 echo "  $TARGET_ABS"
 
-if [ "$INSTALL_CODEX_SKILLS" -eq 1 ]; then
+if [ "$INSTALL_CODEX_PROMPTS" -eq 1 ]; then
   echo
   echo "Codex integration:"
   echo "  detected CODEX_HOME: ${DETECTED_CODEX_HOME:-<empty>}"
   echo "  resolved Codex home: $RESOLVED_CODEX_HOME"
-  echo "  resolved skills directory: $RESOLVED_CODEX_SKILLS_DIR"
+  echo "  legacy skills directory (cleanup only): $RESOLVED_CODEX_SKILLS_DIR"
   echo "  resolved prompts directory: $RESOLVED_CODEX_PROMPTS_DIR"
   echo "  compatibility commands directory: $RESOLVED_CODEX_COMMANDS_DIR"
-  echo "  installed sp-* skills:"
-  printf '%s\n' "$INSTALLED_SKILLS" | while IFS= read -r skill_name; do
-    [ -n "$skill_name" ] || continue
-    echo "    - $skill_name"
-  done
   echo "  installed /prompts:sp.* prompts:"
   printf '%s\n' "$INSTALLED_CODEX_PROMPTS" | while IFS= read -r command_name; do
     [ -n "$command_name" ] || continue
@@ -710,6 +686,13 @@ if [ "$INSTALL_CODEX_SKILLS" -eq 1 ]; then
     [ -n "$command_name" ] || continue
     echo "    - /prompts:$command_name"
   done
+  if [ -n "$REMOVED_LEGACY_CODEX_SKILLS" ]; then
+    echo "  removed legacy sp-* skills:"
+    printf '%s\n' "$REMOVED_LEGACY_CODEX_SKILLS" | while IFS= read -r skill_name; do
+      [ -n "$skill_name" ] || continue
+      echo "    - $skill_name"
+    done
+  fi
   if [ -n "$REMOVED_LEGACY_CODEX_PROMPTS" ]; then
     echo "  removed legacy /prompts:speckit.* prompts:"
     printf '%s\n' "$REMOVED_LEGACY_CODEX_PROMPTS" | while IFS= read -r command_name; do
@@ -728,9 +711,7 @@ if [ "$INSTALL_CODEX_SKILLS" -eq 1 ]; then
   echo "Codex trigger examples:"
   echo "  /prompts:sp.specify"
   echo "  /prompts:sp.analyze"
-  echo "  \$sp-specify"
-  echo "  \$sp-analyze"
-  echo "  reload the Codex workspace if the new prompts or skills do not appear immediately"
+  echo "  reload the Codex workspace if the new prompts do not appear immediately"
 elif [ "$INSTALL_CLAUDE_COMMANDS" -eq 1 ]; then
   echo
   echo "Claude integration:"
@@ -748,7 +729,7 @@ elif [ "$INSTALL_CLAUDE_COMMANDS" -eq 1 ]; then
 else
   echo
   echo "No agent integration was installed."
-  echo "To install Codex prompts and skills, rerun with:"
+  echo "To install Codex prompts, rerun with:"
   echo "  sh scripts/install.sh --ai codex ${TARGET_DIR}"
   echo "To install Claude slash commands, rerun with:"
   echo "  sh scripts/install.sh --ai claude ${TARGET_DIR}"
@@ -757,16 +738,15 @@ fi
 echo
 echo "Trigger conventions:"
 echo "  - Codex Desktop prompts use /prompts:sp.*"
-echo "  - Codex skills use \$sp-*"
 echo "  - slash-command agents use /sp.*"
 echo
 echo "Recommended next steps:"
 echo "  1. Read docs/sp-overview.zh-CN.md or docs/sp-overview.en.md"
 echo "  2. Review .specify/memory/constitution.md"
-if [ "$INSTALL_CODEX_SKILLS" -eq 1 ]; then
-  echo "  3. Reload Codex, then start with /prompts:sp.specify or \$sp-specify"
+if [ "$INSTALL_CODEX_PROMPTS" -eq 1 ]; then
+  echo "  3. Reload Codex, then start with /prompts:sp.specify"
 elif [ "$INSTALL_CLAUDE_COMMANDS" -eq 1 ]; then
   echo "  3. Reload Claude, then start with /sp.specify"
 else
-  echo "  3. Install an agent integration, then start with /prompts:sp.specify, /sp.specify, or \$sp-specify"
+  echo "  3. Install an agent integration, then start with /prompts:sp.specify or /sp.specify"
 fi

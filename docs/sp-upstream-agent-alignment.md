@@ -58,13 +58,13 @@
 - Codex CLI 需要 `--ai-skills`
 - Antigravity (`agy`) 也需要 `--ai-skills`
 - 上游 Codex skills 模式使用 `$speckit-*`
-- 在当前 `sp` 设计中，这一触发形式映射为 `$sp-*`
+- 当前仓库保留这些事实仅作上游背景，不再按 skills 方式分发 Codex 入口
 - 原版支持 `--ai generic --ai-commands-dir <path>` 的通用接入方式
 - `specify check` 会按上游 `AGENT_CONFIG` 检查已配置的 CLI agent
 
 这意味着 `sp` 在 fork 设计时不应做这些错误假设：
 
-- 错误假设一：只有 Codex 需要 skills 模式
+- 错误假设一：当前仓库必须原样保留 Codex skills 才能工作
 - 错误假设二：只有固定少数 agent 需要被支持
 - 错误假设三：不支持官方 generic agent 入口
 
@@ -122,9 +122,9 @@
 
 `sp` 对应策略：
 
-- 使用 skills 方式安装
+- 对当前 fork，Codex 改为 prompts/commands 安装
 - 不强行退回 slash command
-- Codex 保持 `$sp-*`
+- Codex 保持 `/prompts:sp.*`
 - 其他需要 skills 的 agent 也应按其原版方式适配
 
 ### C. generic bring-your-own 类

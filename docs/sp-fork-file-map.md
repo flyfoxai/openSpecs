@@ -135,7 +135,7 @@
 
 ## 4.1 统一原则
 
-- slash command agent 与 Codex skills 使用同一份正文逻辑
+- slash command agent 与 Codex Desktop prompts 使用同一份正文逻辑
 - 差异只应体现在触发方式和落位目录
 - 不同 agent 不应拥有不同的业务规则版本
 
@@ -187,34 +187,34 @@
 
 - `/sp.checklist` 可作为 `/sp.gate` 的兼容别名
 
-## 4.3 skills 型 agent
+## 4.3 Codex Desktop prompts
 
 适用：
 
-- Codex CLI
-- Antigravity (`agy`)
+- Codex CLI / Desktop
 
 建议落位方式：
 
-- 继续沿用原版 skills 安装机制
-- 使用独立的 skills 模板目录
+- 将 prompt 文件写入 `CODEX_HOME/prompts`
+- 同步镜像到 `CODEX_HOME/commands`
 - Codex 命令触发形式固定为：
-  - `$sp-constitution`
-  - `$sp-specify`
-  - `$sp-clarify`
-  - `$sp-flow`
-  - `$sp-ui`
-  - `$sp-gate`
-  - `$sp-bundle`
-  - `$sp-plan`
-  - `$sp-tasks`
-  - `$sp-analyze`
+  - `/prompts:sp.constitution`
+  - `/prompts:sp.specify`
+  - `/prompts:sp.clarify`
+  - `/prompts:sp.flow`
+  - `/prompts:sp.ui`
+  - `/prompts:sp.gate`
+  - `/prompts:sp.bundle`
+  - `/prompts:sp.plan`
+  - `/prompts:sp.tasks`
+  - `/prompts:sp.analyze`
 
 额外要求：
 
-- 初始化时支持 `--ai codex` 默认安装 skills
+- 初始化时支持 `--ai codex` 默认安装 prompts 与 commands 镜像
 - `--ai-skills` 可保留为兼容别名，但不应再成为隐藏前提
 - 兼容 `CODEX_HOME`
+- 清理遗留 `CODEX_HOME/skills/sp-*`
 - 升级后提醒重载 workspace
 
 ## 4.4 generic bring-your-own agent

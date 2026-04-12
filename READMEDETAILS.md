@@ -1,10 +1,10 @@
-# `sp`: 基于 Spec Kit 的分层文档工作流
+# OpenSpecs (Speckit Layered): 基于 Spec Kit 的分层文档工作流
 
 `sp` 是一个基于原版 `Spec Kit` 思路重构的分层文档机制。
 
 它的目标不是让大模型从一段需求直接跳到代码，而是先把项目拆成一套可查询、可回链、可逐步收敛的文档骨架，让模型在有限上下文里只处理当前那一小块工作，同时把已经稳定的中间结论沉淀下来，避免后面反复重想、反复漂移。
 
-当前仓库只覆盖文档阶段，工作流在 `sp.analyze` 结束。本阶段不纳入 `sp.implement`。
+当前仓库只覆盖文档阶段，工作流在 `sp.analyze` 结束。`sp.implement` 可视为后续规划中的实现阶段入口，但不属于当前这份文档阶段 starter pack。
 
 ## 这套机制解决什么问题
 
@@ -264,6 +264,11 @@ curl -fsSL https://raw.githubusercontent.com/flyfoxai/openSpecs/main/scripts/ins
 SP_INSTALL_AI=codex curl -fsSL https://raw.githubusercontent.com/flyfoxai/openSpecs/main/scripts/install.sh | sh -s -- --archive-url https://github.com/flyfoxai/openSpecs/archive/refs/heads/main.tar.gz ./your-project
 ```
 
+说明：
+
+- 上述远程示例默认跟随 `main` 分支，便于快速试用
+- 如果你要稳定安装到某个固定版本，建议把 `--archive-url` 换成指定 tag 或 release 的压缩包链接
+
 Windows 本地执行：
 
 ```powershell
@@ -283,13 +288,18 @@ $env:SP_INSTALL_ARCHIVE_URL="https://github.com/flyfoxai/openSpecs/archive/refs/
 
 说明：
 
+- Windows 远程示例同样默认跟随 `main.zip`
+- 若要锁定版本，请改成明确 tag / release 的 zip 地址
+
+说明：
+
 - 不传目录时默认安装到当前目录
 - 安装前默认要求确认
 - `curl | sh` 场景支持通过 `--archive-url` 与可选目标目录传参
 - `irm | iex` 场景通过 `SP_INSTALL_ARCHIVE_URL`、`SP_INSTALL_TARGET_DIR`、`SP_INSTALL_AI`、`SP_INSTALL_AUTO_YES` 传参
 - 不带 `--ai codex` 或 `SP_INSTALL_AI=codex` 时，安装器只落地 starter pack，不会写入 Codex prompts 或 skills
 
-如果当前要给 Codex 安装 prompts 和 skills，需要显式启用 Codex 模式：
+如果当前要给 Codex 安装 prompts，需要显式启用 Codex 模式：
 
 ```bash
 sh scripts/install.sh --ai codex ./your-project
@@ -299,15 +309,28 @@ sh scripts/install.sh --ai codex ./your-project
 powershell -ExecutionPolicy Bypass -File .\scripts\install.ps1 -Ai codex .\your-project
 ```
 
-当前仓库里的 starter pack 安装器会在 `--ai codex` / `-Ai codex` 模式下优先写入 Codex Desktop 的 `prompts` 目录，并同步镜像到 `commands` 兼容目录，同时安装 Codex skills。`--ai-skills` / `-AiSkills` 只保留为兼容别名，不再是隐藏前提。安装结束时会打印：
+当前仓库里的 starter pack 安装器会在 `--ai codex` / `-Ai codex` 模式下优先写入 Codex Desktop 的 `prompts` 目录，并同步镜像到 `commands` 兼容目录。`--ai-skills` / `-AiSkills` 只保留为兼容空操作参数，不再触发任何 skills 安装。安装结束时会打印：
 
 - 检测到的 `CODEX_HOME`
-- 最终使用的 Codex home、prompts 主目录、commands 兼容目录与 skills 目录
+- 最终使用的 Codex home、prompts 主目录与 commands 兼容目录
 - 已安装到 `prompts` 的 `/prompts:sp.*` 命令列表
 - 已镜像到 `commands` 的 `/prompts:sp.*` 命令列表
-- 已安装的 `sp-*` skills 列表
+- 已清理的遗留 `sp-*` skills 列表（如果有）
 - 从 `prompts` 与 `commands` 中清理掉的旧 `/prompts:speckit.*` 命令列表（如果有）
-- 可直接触发的示例，例如 `/prompts:sp.specify`、`$sp-specify`
+- 可直接触发的示例，例如 `/prompts:sp.specify`
+
+安装后也建议快速自检：
+
+```bash
+ls "${CODEX_HOME:-$HOME/.codex}/prompts" | grep '^sp\.'
+ls "${CODEX_HOME:-$HOME/.codex}/commands" | grep '^sp\.'
+```
+
+```powershell
+$codexHome = if ($env:CODEX_HOME) { $env:CODEX_HOME } else { Join-Path $HOME ".codex" }
+Get-ChildItem (Join-Path $codexHome "prompts") -Filter "sp.*.md"
+Get-ChildItem (Join-Path $codexHome "commands") -Filter "sp.*.md"
+```
 
 安装完成后，你可以直接用这套文档规范和样例推进设计工作：
 
@@ -337,13 +360,11 @@ specify check
 
 - slash command agent：`/sp.specify`
 - Codex Desktop prompts：`/prompts:sp.specify`
-- Codex skills 模式：`$sp-specify`
 
 必须明确区分：
 
 - `/sp.*` 只属于 slash-command agents
 - `/prompts:sp.*` 属于 Codex Desktop prompts
-- `$sp-*` 属于 Codex skills
 - 不应再把 Codex Desktop 示例写成旧的 `/prompts:speckit.analyze`
 
 其他命令同理：
@@ -357,15 +378,15 @@ specify check
 - `/sp.plan`
 - `/sp.tasks`
 - `/sp.analyze`
-- `$sp-constitution`
-- `$sp-clarify`
-- `$sp-flow`
-- `$sp-ui`
-- `$sp-gate`
-- `$sp-bundle`
-- `$sp-plan`
-- `$sp-tasks`
-- `$sp-analyze`
+- `/prompts:sp.constitution`
+- `/prompts:sp.clarify`
+- `/prompts:sp.flow`
+- `/prompts:sp.ui`
+- `/prompts:sp.gate`
+- `/prompts:sp.bundle`
+- `/prompts:sp.plan`
+- `/prompts:sp.tasks`
+- `/prompts:sp.analyze`
 
 跨平台兼容原则：
 

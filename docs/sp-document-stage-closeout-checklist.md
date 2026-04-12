@@ -33,7 +33,7 @@
 ## 4. Agent 兼容封板
 
 - [x] Codex、Claude、Gemini、Kiro、Windsurf、generic 等兼容范围已覆盖
-- [x] `--ai-skills` 与 generic 模式约束已成文
+- [x] `--ai-skills` 兼容空操作与 generic 模式约束已成文
 - [x] 文档明确区分“上游现状”与“当前 `sp` 映射”
 
 ## 5. 模板与产物封板

@@ -68,9 +68,9 @@ $env:SP_INSTALL_ARCHIVE_URL="https://github.com/flyfoxai/openSpecs/archive/refs/
 ```
 
 **如果你使用 Codex：**
-在终端唤起 Codex CLI，输入：
+在终端唤起 Codex，输入：
 ```text
-$sp-specify 我想开发一个请假审批模块，包含员工申请和主管审批功能。
+/prompts:sp.specify 我想开发一个请假审批模块，包含员工申请和主管审批功能。
 ```
 
 ### AI 的响应预期：

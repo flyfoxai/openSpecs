@@ -31,9 +31,8 @@
 ## 触发方式
 
 - Codex Desktop prompts 使用 `/prompts:sp.*`
-- Codex skills 使用 `$sp-*`
 - slash-command agents 使用 `/sp.*`
-- 只有在安装时启用 Codex 模式，`/prompts:sp.*` 与 `sp-*` skills 才会被写入 Codex 目录
+- 只有在安装时启用 Codex 模式，`/prompts:sp.*` 才会被写入 Codex 目录；安装器会顺带清理遗留 `sp-*` skills
 
 ## 下一步看哪里
 

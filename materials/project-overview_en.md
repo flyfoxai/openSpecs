@@ -44,7 +44,7 @@ At the `sp.plan` stage, massive systems are forced into multiple localized `ws-*
 ### 5. Decoupling Step Semantics from Platform Triggers (Agent Agnostic)
 No matter which AI platform you use, the underlying engineering standard is always `sp.*`:
 *   **Claude Code, etc. (Slash Command)** trigger format: `/sp.specify`
-*   **Codex CLI (Skills)** trigger format: `$sp-specify`
+*   **Codex Desktop (Prompts)** trigger format: `/prompts:sp.specify`
 
 ---
 
@@ -57,7 +57,7 @@ We provide an automated installation script (Starter Pack) so you can quickly in
 # Default installation
 sh scripts/install.sh ./your-project
 
-# Install for Codex (Auto-generates sp-* skills)
+# Install for Codex (Installs `/prompts:sp.*`)
 sh scripts/install.sh --ai codex ./your-project
 
 # Install for Claude (Auto-generates /sp.* commands)
@@ -90,7 +90,7 @@ $env:SP_INSTALL_ARCHIVE_URL="https://github.com/flyfoxai/openSpecs/archive/refs/
 $env:SP_INSTALL_ARCHIVE_URL="https://github.com/flyfoxai/openSpecs/archive/refs/heads/main.zip"; $env:SP_INSTALL_TARGET_DIR="C:\path\to\your-project"; $env:SP_INSTALL_AI="codex"; irm https://raw.githubusercontent.com/flyfoxai/openSpecs/main/scripts/install.ps1 | iex
 ```
 
-> *Note: Default install only writes the starter pack. Only in Codex mode (`--ai codex` or `SP_INSTALL_AI=codex`) will the installer resolve `CODEX_HOME` or fall back to the default `.codex/skills` directory and actually write the `sp-*` skills.*
+> *Note: Default install only writes the starter pack. Only in Codex mode (`--ai codex` or `SP_INSTALL_AI=codex`) will the installer resolve `CODEX_HOME`, write `/prompts:sp.*` into `.codex/prompts`, mirror them into `.codex/commands`, and clean any legacy `sp-*` skills if they still exist.*
 
 ---
 

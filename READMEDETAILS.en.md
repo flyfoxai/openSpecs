@@ -1,10 +1,10 @@
-# `sp`: A Layered Documentation Workflow Built on Spec Kit
+# OpenSpecs (Speckit Layered): A Layered Documentation Workflow Built on Spec Kit
 
 `sp` is a layered documentation mechanism adapted from the original `Spec Kit` approach.
 
 Its goal is not to let a model jump directly from a raw request to production code. Instead, it first turns a project into a queryable, traceable, progressively refined document skeleton so the model can work on only the local area it needs, while stable intermediate conclusions are preserved and reused.
 
-This repository currently covers the documentation phase only. The workflow ends at `sp.analyze`. `sp.implement` is out of scope for the current phase.
+This repository currently covers the documentation phase only. The workflow ends at `sp.analyze`. `sp.implement` can be treated as a later implementation-stage entry, but it is outside the scope of this starter pack.
 
 ## What Problems This Mechanism Solves
 
@@ -264,6 +264,11 @@ curl -fsSL https://raw.githubusercontent.com/flyfoxai/openSpecs/main/scripts/ins
 SP_INSTALL_AI=codex curl -fsSL https://raw.githubusercontent.com/flyfoxai/openSpecs/main/scripts/install.sh | sh -s -- --archive-url https://github.com/flyfoxai/openSpecs/archive/refs/heads/main.tar.gz ./your-project
 ```
 
+Notes:
+
+- These remote examples intentionally use the moving `main` branch for convenience
+- For stable installs, replace `--archive-url` with a release or tag archive URL that pins the exact version you want
+
 Windows local execution:
 
 ```powershell
@@ -283,13 +288,18 @@ $env:SP_INSTALL_ARCHIVE_URL="https://github.com/flyfoxai/openSpecs/archive/refs/
 
 Notes:
 
+- The Windows remote examples also follow `main.zip` by default
+- Use a tag or release archive URL instead when you need reproducible installs
+
+Notes:
+
 - If no directory is passed, installation defaults to the current directory
 - Confirmation is required by default
 - `curl | sh` mode accepts `--archive-url` and an optional target directory
 - `irm | iex` mode uses `SP_INSTALL_ARCHIVE_URL`, `SP_INSTALL_TARGET_DIR`, `SP_INSTALL_AI`, and `SP_INSTALL_AUTO_YES`
 - Without `--ai codex` or `SP_INSTALL_AI=codex`, the installer only writes the starter pack and does not install Codex prompts or skills
 
-If you want to install Codex prompts and skills as part of the starter pack, enable Codex mode explicitly:
+If you want to install Codex prompts as part of the starter pack, enable Codex mode explicitly:
 
 ```bash
 sh scripts/install.sh --ai codex ./your-project
@@ -299,15 +309,28 @@ sh scripts/install.sh --ai codex ./your-project
 powershell -ExecutionPolicy Bypass -File .\scripts\install.ps1 -Ai codex .\your-project
 ```
 
-In `--ai codex` / `-Ai codex` mode, the installer writes Codex Desktop prompts into the primary `prompts` directory, mirrors them into the compatibility `commands` directory, and installs the Codex skills directory. `--ai-skills` / `-AiSkills` is kept only as a compatibility alias, not as a hidden prerequisite. In that mode, the installer now prints:
+In `--ai codex` / `-Ai codex` mode, the installer writes Codex Desktop prompts into the primary `prompts` directory and mirrors them into the compatibility `commands` directory. `--ai-skills` / `-AiSkills` is kept only as a compatibility no-op and no longer triggers any skill installation. In that mode, the installer now prints:
 
 - detected `CODEX_HOME`
-- the resolved Codex home, primary prompts directory, compatibility commands directory, and skills directory
+- the resolved Codex home, primary prompts directory, and compatibility commands directory
 - the `/prompts:sp.*` prompt list written into `prompts`
 - the mirrored `/prompts:sp.*` command list written into `commands`
-- the installed `sp-*` skill list
+- any removed legacy `sp-*` skill directories
 - any removed legacy `/prompts:speckit.*` files from both `prompts` and `commands`
-- direct trigger examples such as `/prompts:sp.specify` and `$sp-specify`
+- direct trigger examples such as `/prompts:sp.specify`
+
+Recommended quick checks after installation:
+
+```bash
+ls "${CODEX_HOME:-$HOME/.codex}/prompts" | grep '^sp\.'
+ls "${CODEX_HOME:-$HOME/.codex}/commands" | grep '^sp\.'
+```
+
+```powershell
+$codexHome = if ($env:CODEX_HOME) { $env:CODEX_HOME } else { Join-Path $HOME ".codex" }
+Get-ChildItem (Join-Path $codexHome "prompts") -Filter "sp.*.md"
+Get-ChildItem (Join-Path $codexHome "commands") -Filter "sp.*.md"
+```
 
 After installation, you can already use the documentation rules and examples directly:
 
@@ -338,13 +361,11 @@ Command trigger conventions:
 
 - Slash-command agents: `/sp.specify`
 - Codex Desktop prompts: `/prompts:sp.specify`
-- Codex skills mode: `$sp-specify`
 
 These forms must stay separate:
 
 - `/sp.*` belongs only to slash-command agents
 - `/prompts:sp.*` belongs to Codex Desktop prompts
-- `$sp-*` belongs to Codex skills
 - Codex Desktop examples must not be written as legacy `/prompts:speckit.analyze`
 
 The same pattern applies to the other commands:
@@ -358,15 +379,15 @@ The same pattern applies to the other commands:
 - `/sp.plan`
 - `/sp.tasks`
 - `/sp.analyze`
-- `$sp-constitution`
-- `$sp-clarify`
-- `$sp-flow`
-- `$sp-ui`
-- `$sp-gate`
-- `$sp-bundle`
-- `$sp-plan`
-- `$sp-tasks`
-- `$sp-analyze`
+- `/prompts:sp.constitution`
+- `/prompts:sp.clarify`
+- `/prompts:sp.flow`
+- `/prompts:sp.ui`
+- `/prompts:sp.gate`
+- `/prompts:sp.bundle`
+- `/prompts:sp.plan`
+- `/prompts:sp.tasks`
+- `/prompts:sp.analyze`
 
 Cross-platform compatibility principles:
 

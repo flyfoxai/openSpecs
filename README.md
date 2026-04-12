@@ -7,7 +7,7 @@
 它的目标不是让大模型从“一句话需求”直接跳到“生成代码”，而是强制 AI 在写代码前，先把需求、业务流、界面、交付设计按固定步骤沉淀成可查询、可回链的“文档骨架”。
 这能有效防止大模型在复杂项目中产生“架构崩塌”和“幻觉循环”。
 
-> **注意：** 当前阶段框架主要覆盖“文档化阶段”，工作流到 `sp.analyze` 结束，暂不包含后续的自动化实现（`sp.implement`）。
+> **注意：** 当前阶段框架主要覆盖“文档化阶段”，工作流到 `sp.analyze` 结束。`sp.implement` 可视为后续规划中的实现阶段入口，但不属于本仓库当前规范范围。
 
 ---
 
@@ -45,7 +45,6 @@
 无论你用哪个 AI 平台，底层工程规范始终是 `sp.*`：
 *   **Claude Code 等 (Slash Command)** 触发形式：`/sp.specify`
 *   **Codex Desktop prompts** 触发形式：`/prompts:sp.specify`
-*   **Codex Skills** 触发形式：`$sp-specify`
 
 ---
 
@@ -58,7 +57,7 @@
 # 默认安装
 sh scripts/install.sh ./your-project
 
-# 为 Codex 安装 (自动生成 /prompts:sp.* 和 sp-* skills)
+# 为 Codex 安装 (自动生成 /prompts:sp.*，并镜像到 commands 兼容目录)
 sh scripts/install.sh --ai codex ./your-project
 
 # 为 Claude 安装 (自动生成 /sp.* commands)
@@ -82,6 +81,8 @@ curl -fsSL https://raw.githubusercontent.com/flyfoxai/openSpecs/main/scripts/ins
 # 安装 starter pack + Codex integration
 SP_INSTALL_AI=codex curl -fsSL https://raw.githubusercontent.com/flyfoxai/openSpecs/main/scripts/install.sh | sh -s -- --archive-url https://github.com/flyfoxai/openSpecs/archive/refs/heads/main.tar.gz ./your-project
 ```
+> *说明：上面的远程示例为了便于试用，使用的是实时跟随 `main` 分支的 archive URL。若你需要稳定可复现的安装，建议把 `--archive-url` 替换为明确的 release 或 tag 压缩包地址。*
+
 **Windows:**
 ```powershell
 # 默认仅安装 starter pack
@@ -90,8 +91,22 @@ $env:SP_INSTALL_ARCHIVE_URL="https://github.com/flyfoxai/openSpecs/archive/refs/
 # 安装 starter pack + Codex integration
 $env:SP_INSTALL_ARCHIVE_URL="https://github.com/flyfoxai/openSpecs/archive/refs/heads/main.zip"; $env:SP_INSTALL_TARGET_DIR="C:\path\to\your-project"; $env:SP_INSTALL_AI="codex"; irm https://raw.githubusercontent.com/flyfoxai/openSpecs/main/scripts/install.ps1 | iex
 ```
+> *Windows 同理：`main.zip` 只是当前主分支示例，不适合作为长期锁定版本。需要稳定安装时，请改成指定 tag / release 的压缩包链接。*
 
-> *注：默认安装只会落地 starter pack。只有在 Codex 模式下（`--ai codex` 或 `SP_INSTALL_AI=codex`），安装器才会检测 `CODEX_HOME` 或回退到默认 `.codex` 目录，优先把 Codex Desktop 的 `/prompts:sp.*` 命令文件写入 `CODEX_HOME/prompts`，并同步镜像到 `CODEX_HOME/commands`，同时安装 `sp-*` skills；安装时还会清理两个目录里的旧 `speckit.*` Codex Desktop 命令文件。*
+> *注：默认安装只会落地 starter pack。只有在 Codex 模式下（`--ai codex` 或 `SP_INSTALL_AI=codex`），安装器才会检测 `CODEX_HOME` 或回退到默认 `.codex` 目录，优先把 Codex Desktop 的 `/prompts:sp.*` 命令文件写入 `CODEX_HOME/prompts`，并同步镜像到 `CODEX_HOME/commands`。安装时还会清理两个目录里的旧 `speckit.*` Codex Desktop 命令文件，以及遗留的 `sp-*` skills 目录；`--ai-skills` 仅保留为兼容空操作参数。*
+
+```bash
+ls "${CODEX_HOME:-$HOME/.codex}/prompts" | grep '^sp\.'
+ls "${CODEX_HOME:-$HOME/.codex}/commands" | grep '^sp\.'
+```
+
+```powershell
+$codexHome = if ($env:CODEX_HOME) { $env:CODEX_HOME } else { Join-Path $HOME ".codex" }
+Get-ChildItem (Join-Path $codexHome "prompts") -Filter "sp.*.md"
+Get-ChildItem (Join-Path $codexHome "commands") -Filter "sp.*.md"
+```
+
+> *安装后可用上面两组命令做快速自检，确认 `CODEX_HOME/prompts` 与 `CODEX_HOME/commands` 中已经是 `sp.*`，且不再残留旧的 `speckit.*` 文件。*
 
 ---
 

@@ -153,8 +153,8 @@
 执行要求：
 
 - slash command agent 使用 `/sp.*`
-- skills agent 按原版方式安装
-- Codex 保持 `$sp-*`
+- prompts 型 agent 按宿主目录写入
+- Codex 保持 `/prompts:sp.*`
 - 其他 skills agent 也按 upstream 对应方式适配
 - generic 继续支持 `--ai generic --ai-commands-dir <path>`
 

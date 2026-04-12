@@ -68,9 +68,9 @@ Summon Claude Code in the terminal and type:
 ```
 
 **If you use Codex:**
-Summon Codex CLI in the terminal and type:
+Summon Codex and type:
 ```text
-$sp-specify I want to develop a leave approval module, including employee application and manager approval features.
+/prompts:sp.specify I want to develop a leave approval module, including employee application and manager approval features.
 ```
 
 ### Expected AI Response:
