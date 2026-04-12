@@ -945,7 +945,8 @@ specs/<feature>/
 标准工作提示：
 
 - `Read First`：先读取项目级 `.specify/memory/*` 入口，再读取 feature 级 `memory/*` 入口，最后读取第一层与第二层全部核心产物
-- `Do`：检查需求、流程、页面、规则、计划、任务之间的断裂和冲突，并基于通过线给出最终 verdict；同时检查 memory 是否过期、追踪索引是否断裂、workset 是否仍然代表当前局部结构，并把高优先级风险同步进 `.specify/memory/hotspots.md`，把 readiness 结论同步进 `.specify/memory/project-index.md` 与 `.specify/memory/feature-map.md`
+- `Read First` 补充：若项目级入口仍显示 `No active feature`、`not selected` 或其他与当前工作区不符的旧状态，必须继续核对 `feature-map.md`、`specs/*/memory/index.md` 与当前正文，再决定是否真的缺少目标 feature
+- `Do`：先判断项目级入口是否 stale、是否与 feature 级入口或正文冲突；若只有一个清晰可用的 feature 级入口，则直接以该 feature 继续分析，并把项目级入口陈旧列为要刷新的发现。然后检查需求、流程、页面、规则、计划、任务之间的断裂和冲突，并基于通过线给出最终 verdict；同时检查 memory 是否过期、追踪索引是否断裂、workset 是否仍然代表当前局部结构，并把高优先级风险同步进 `.specify/memory/hotspots.md`，把 readiness 结论同步进 `.specify/memory/project-index.md` 与 `.specify/memory/feature-map.md`
 - `Do Not`：不要只写摘要，不要把未决问题包装成一致
 - `Check Before Finish`：确认每个发现都包含影响说明、证据位置、缺口分类和建议回退步骤；若 feature 已接近中型项目规模，还要确认已判断拆分结构、查询结构和 workset 路由是否仍有效；若已达到中型项目工作负载，还要确认已记录冒烟范围、关键样本、抽样结论和 verdict 影响，且未执行冒烟检查时不得判定 `PASS`；同时确认已判断 memory 和 workset 是否陈旧，并已刷新项目级热点与 readiness 入口；最终结论必须落在 `PASS`、`PASS WITH RISKS` 或 `BLOCKED`
 - `Next`：若存在重大裂缝，返回对应步骤修正；否则结束文档阶段

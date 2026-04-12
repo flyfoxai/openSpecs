@@ -26,6 +26,9 @@
 - 如果 `.specify/memory/project-index.md` 已存在，必须先读它，再决定进入哪个 feature
 - 如果 `.specify/memory/active-context.md` 已存在，必须结合它决定当前最小阅读集
 - 如果 `memory/index.md` 已存在，必须先读它，再决定展开哪些源文档
+- 若项目级 `.specify/memory/*` 与 feature 级 `memory/*`、`feature-map.md` 或当前正文状态冲突，必须先做 freshness 与路由一致性判断，不能把项目级入口直接当成最终真相
+- 若项目级入口仍写着 `No active feature`，但当前工作区内只有一个明确存在的 `specs/*/memory/index.md`，应直接把该 feature 作为当前目标，并把项目级入口标记为 stale
+- 只有在项目级与 feature 级路由对齐失败、且无法从 `feature-map.md`、分支上下文、`SPECIFY_FEATURE` 或用户明确目标中确定唯一 feature 时，才允许报告“缺少 feature 上下文”
 - 在展开源文档前，必须先判断当前 memory 是否 fresh，是否已足够回答本步问题
 - 先读前序产物，再决定是否扩写
 - 输出必须落到约定路径
