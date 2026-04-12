@@ -25,7 +25,7 @@
 
 - feature 目录名 `codex-skills-installation` 仍然带有历史命名色彩，但内容已转为 prompt-only 背景说明
 - `--ai-skills` / `-AiSkills` 目前仍保留为兼容空操作，后续可以择机彻底移除
-- 若要进一步降低用户理解成本，可在后续把 `installer-assets/claude-commands/` 重命名为更中性的 prompts 目录
+- 仍建议补一份面向 Windows 的专门 smoke checklist，降低 Codex 回归成本
 
 ## Summary
 

@@ -48,7 +48,7 @@ Behavior:
   - Windows local mode copies assets from the current repository.
   - iwr|iex mode requires -ArchiveUrl or SP_INSTALL_ARCHIVE_URL.
   - Remote mode can also use SP_INSTALL_TARGET_DIR and SP_INSTALL_AUTO_YES.
-  - -Ai codex installs primary Codex Desktop /prompts:sp.* prompts and a compatibility commands mirror.
+  - -Ai codex installs pre-rendered Codex Desktop /prompts:sp.* prompts and a compatibility commands mirror.
   - -Ai claude installs /sp.* slash commands into .claude/commands in the target project.
   - -AiSkills is deprecated, ignored, and kept only as a compatibility no-op for Codex mode.
 "@
@@ -289,9 +289,9 @@ function Install-CodexCommands {
         [string]$SourceRoot
     )
 
-    $commandsSourceRoot = Join-Path $SourceRoot "installer-assets/claude-commands"
+    $commandsSourceRoot = Join-Path $SourceRoot "installer-assets/codex-prompts"
     if (-not (Test-Path $commandsSourceRoot)) {
-        throw "Codex Desktop prompt installation failed: missing installer-assets/claude-commands in source."
+        throw "Codex Desktop prompt installation failed: missing installer-assets/codex-prompts in source."
     }
 
     try {
@@ -346,15 +346,13 @@ function Install-CodexCommands {
             throw "Codex Desktop prompt installation failed: missing source command file for $commandName"
         }
 
-        $content = Get-Content -Raw -Path $src
-        $content = $content -replace '/sp\.', '/prompts:sp.'
-        Set-Content -Path $promptDest -Value $content -Encoding utf8
+        Copy-Item -Path $src -Destination $promptDest -Force
 
         if (-not (Test-Path $promptDest)) {
             throw "Codex Desktop prompt installation failed: failed to write $commandName into $script:ResolvedCodexPromptsDir"
         }
 
-        Set-Content -Path $commandDest -Value $content -Encoding utf8
+        Copy-Item -Path $src -Destination $commandDest -Force
 
         if (-not (Test-Path $commandDest)) {
             throw "Codex Desktop prompt installation failed: failed to mirror $commandName into $script:ResolvedCodexCommandsDir"

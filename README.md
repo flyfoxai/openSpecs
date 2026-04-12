@@ -57,10 +57,10 @@
 # 默认安装
 sh scripts/install.sh ./your-project
 
-# 为 Codex 安装 (自动生成 /prompts:sp.*，并镜像到 commands 兼容目录)
+# 为 Codex 安装 (写入预渲染的 /prompts:sp.*，并镜像到 commands 兼容目录)
 sh scripts/install.sh --ai codex ./your-project
 
-# 为 Claude 安装 (自动生成 /sp.* commands)
+# 为 Claude 安装 (写入纯文本 /sp.* commands)
 sh scripts/install.sh --ai claude ./your-project
 ```
 
@@ -93,7 +93,7 @@ $env:SP_INSTALL_ARCHIVE_URL="https://github.com/flyfoxai/openSpecs/archive/refs/
 ```
 > *Windows 同理：`main.zip` 只是当前主分支示例，不适合作为长期锁定版本。需要稳定安装时，请改成指定 tag / release 的压缩包链接。*
 
-> *注：默认安装只会落地 starter pack。只有在 Codex 模式下（`--ai codex` 或 `SP_INSTALL_AI=codex`），安装器才会检测 `CODEX_HOME` 或回退到默认 `.codex` 目录，优先把 Codex Desktop 的 `/prompts:sp.*` 命令文件写入 `CODEX_HOME/prompts`，并同步镜像到 `CODEX_HOME/commands`。安装时还会清理两个目录里的旧 `speckit.*` Codex Desktop 命令文件，以及遗留的 `sp-*` skills 目录；`--ai-skills` 仅保留为兼容空操作参数。*
+> *注：默认安装只会落地 starter pack。Codex 模式下（`--ai codex` 或 `SP_INSTALL_AI=codex`），安装器会把仓库内预渲染好的结构化 `/prompts:sp.*` 直接写入 `CODEX_HOME/prompts`，并同步镜像到 `CODEX_HOME/commands`。Claude 模式下（`--ai claude`），安装器会把 `installer-assets/claude-commands/` 中的纯文本 `/sp.*` 直接复制到目标命令目录。安装时还会清理两个目录里的旧 `speckit.*` Codex Desktop 命令文件，以及遗留的 `sp-*` skills 目录；`--ai-skills` 仅保留为兼容空操作参数。*
 
 ```bash
 ls "${CODEX_HOME:-$HOME/.codex}/prompts" | grep '^sp\.'

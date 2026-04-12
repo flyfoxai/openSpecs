@@ -4,7 +4,8 @@
 This repository is a documentation-first starter pack for the `sp.*` workflow.
 
 - `docs/`: source specifications, architecture notes, installation strategy, and validation docs.
-- `installer-assets/claude-commands/`: Markdown command templates such as `sp.analyze.md`.
+- `installer-assets/claude-commands/`: pre-rendered slash-command templates for Claude-style hosts.
+- `installer-assets/codex-prompts/`: pre-rendered prompt templates for Codex Desktop hosts.
 - `installer-assets/project/`: files copied into target projects, including `.specify/memory/` and overview docs.
 - `scripts/install.sh` and `scripts/install.ps1`: the main installer entry points.
 - `layer-1-business-clarification/` and `layer-2-delivery/`: staged workflow content shipped by the installer.

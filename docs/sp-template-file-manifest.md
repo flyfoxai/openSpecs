@@ -1,10 +1,15 @@
 # `sp` 模板文件清单
 
-> 目标：给未来真实 fork 提供一份可直接照着创建文件的模板清单。
+> 目标：给当前仓库和未来真实 fork 提供一份可直接照着创建文件的模板清单。
 
 ## 1. 使用范围
 
-这份清单只定义未来 fork 中应存在的模板文件，不在当前仓库直接创建原版目录。
+这份清单主要定义模板文件清单。
+
+当前仓库已直接维护两套 agent 资产目录：
+
+- `installer-assets/claude-commands/`
+- `installer-assets/codex-prompts/`
 
 设计边界：
 
@@ -67,6 +72,8 @@
 说明：
 
 - Codex 与 slash-command agent 应共用同一份正文逻辑
+- Claude 类 slash-command 模板应保持纯文本命令正文
+- Codex prompt 模板允许在同一正文外包裹宿主要求的 frontmatter、`## User Input` 与 `$ARGUMENTS`
 - 其他 prompts 型 agent 应优先复用同一套正文，再按宿主要求做外层包装
 
 ## 2.3 generic agent 模板包装

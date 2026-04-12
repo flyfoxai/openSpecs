@@ -92,10 +92,10 @@ Codex integration notes:
 - Codex Desktop prompts use `/prompts:sp.*`
 - slash-command agents use `/sp.*`
 - Starter-pack-only installs do not write Codex prompts
-- The installer installs Codex Desktop prompts and a compatibility commands mirror when `--ai codex` or `-Ai codex` is used
+- The installer copies pre-rendered Codex Desktop prompts and a compatibility commands mirror when `--ai codex` or `-Ai codex` is used
 - The remote one-command Codex path uses `SP_INSTALL_AI=codex`
-- The installer installs Claude slash commands by default when `--ai claude` or `-Ai claude` is used
-- In Codex mode, installation is successful only when project templates are written, `/prompts:sp.*` files exist in `CODEX_HOME/prompts`, mirrored copies exist in `CODEX_HOME/commands`, and any legacy `sp-*` skill directories are removed
+- The installer copies plain-text Claude slash commands when `--ai claude` or `-Ai claude` is used
+- In Codex mode, installation is successful only when project templates are written, the pre-rendered `/prompts:sp.*` files exist in `CODEX_HOME/prompts`, mirrored copies exist in `CODEX_HOME/commands`, and any legacy `sp-*` skill directories are removed
 
 Quick Codex post-install checks:
 

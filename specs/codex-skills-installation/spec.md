@@ -74,6 +74,5 @@
 
 ## Open Clarification Items
 
-- `installer-assets/claude-commands/` 是否在后续重命名为更中性的 prompts 资产目录
 - 是否需要在后续版本里彻底移除 `--ai-skills` / `-AiSkills` 兼容参数
 - 是否需要补一份面向 Windows 的专门 smoke checklist，降低 Codex 回归成本

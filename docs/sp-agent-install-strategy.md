@@ -61,6 +61,21 @@ Codex Desktop 应使用 prompts 触发：
 
 这里的 `/prompts:sp.*` 是 Codex Desktop 的调用形式，本质上仍对应同一组 `sp.*` 步骤。
 
+## 3.3 当前仓库的模板分发约束
+
+当前仓库已经按 agent 物理分离模板源：
+
+- Claude slash command 资产位于 `installer-assets/claude-commands/`
+- Codex Desktop prompt 资产位于 `installer-assets/codex-prompts/`
+
+实现要求：
+
+- 两套目录中的文件都必须是最终可安装形态
+- `installer-assets/claude-commands/` 必须保持 Claude 可直接读取的纯文本 Markdown，不混入 Codex 专属 frontmatter、`## User Input` 或 `$ARGUMENTS`
+- `installer-assets/codex-prompts/` 才承载 Codex Desktop 所需的结构化 prompt 外壳
+- 安装脚本只做按目录复制，不在安装时改写正文
+- Codex 的 `/prompts:sp.*` 不得再由 Claude 的 `/sp.*` 在安装阶段动态转译
+
 ## 4. 安装策略
 
 ### 4.1 不带 `--ai`
@@ -102,6 +117,7 @@ Codex Desktop 应使用 prompts 触发：
 Codex 模式的成功条件必须同时满足：
 
 - starter pack 已写入目标项目
+- `installer-assets/codex-prompts/` 中存在预渲染的 `sp.*` prompt 资产
 - Codex prompts 目录里实际出现 `sp.*` 命令文件
 - Codex commands 兼容目录里实际出现镜像的 `sp.*` 命令文件
 - 若 `CODEX_HOME/skills` 下存在旧 `sp-*`，安装后应被清理
@@ -223,9 +239,9 @@ Claude 模式的成功条件必须同时满足：
 
 ## 9. 当前仓库的实现状态
 
-截至当前仓库状态，这份文档描述的是目标策略，不是全部已实现能力。
+截至当前仓库当前实现，这份文档描述的关键安装链路已经落地；最终仍应以脚本行为和安装输出为准。
 
-当前实现是否达标，必须按下面顺序判断：
+当前实现是否达标，应按下面顺序判断：
 
 1. 看安装脚本真实支持的 `--ai` 分支
 2. 看安装脚本是否真的写入了对应目录

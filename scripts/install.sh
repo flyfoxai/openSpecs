@@ -55,7 +55,7 @@ Behavior:
   - macOS/Linux local mode copies assets from the current repository.
   - curl|sh mode requires --archive-url or SP_INSTALL_ARCHIVE_URL.
   - Remote mode can also use SP_INSTALL_TARGET_DIR and SP_INSTALL_AUTO_YES.
-  - --ai codex installs primary Codex Desktop /prompts:sp.* prompts and a compatibility commands mirror.
+  - --ai codex installs pre-rendered Codex Desktop /prompts:sp.* prompts and a compatibility commands mirror.
   - --ai claude installs /sp.* slash commands into .claude/commands in the target project.
   - --ai-skills is deprecated, ignored, and kept only as a compatibility no-op for Codex mode.
 EOF
@@ -247,9 +247,9 @@ $slug"
 }
 
 install_codex_commands() {
-  COMMAND_SOURCE_ROOT="$SOURCE_ROOT/installer-assets/claude-commands"
+  COMMAND_SOURCE_ROOT="$SOURCE_ROOT/installer-assets/codex-prompts"
   if [ ! -d "$COMMAND_SOURCE_ROOT" ]; then
-    echo "error: Codex Desktop prompt installation failed: missing installer-assets/claude-commands in source." >&2
+    echo "error: Codex Desktop prompt installation failed: missing installer-assets/codex-prompts in source." >&2
     exit 1
   fi
 
@@ -324,7 +324,7 @@ $legacy_name"
       exit 1
     fi
 
-    if ! sed 's|/sp\.|/prompts:sp.|g' "$src" >"$prompt_dest"; then
+    if ! cp "$src" "$prompt_dest"; then
       echo "error: Codex Desktop prompt installation failed: failed to write $command_name into $RESOLVED_CODEX_PROMPTS_DIR" >&2
       exit 1
     fi
@@ -334,7 +334,7 @@ $legacy_name"
       exit 1
     fi
 
-    if ! sed 's|/sp\.|/prompts:sp.|g' "$src" >"$command_dest"; then
+    if ! cp "$src" "$command_dest"; then
       echo "error: Codex Desktop prompt installation failed: failed to mirror $command_name into $RESOLVED_CODEX_COMMANDS_DIR" >&2
       exit 1
     fi
