@@ -17,6 +17,8 @@ from specify_cli.integrations import INTEGRATION_REGISTRY, get_integration
 from specify_cli.integrations.base import TomlIntegration
 from specify_cli.integrations.manifest import IntegrationManifest
 
+from .sp_expected import command_files, project_scaffold_files
+
 
 class TomlIntegrationTests:
     """Mixin — set class-level constants and inherit these tests.
@@ -76,7 +78,7 @@ class TomlIntegrationTests:
         cmd_files = [f for f in created if "scripts" not in f.parts]
         for f in cmd_files:
             assert f.exists()
-            assert f.name.startswith("speckit.")
+            assert f.name.startswith("sp.")
             assert f.name.endswith(".toml")
 
     def test_setup_writes_to_correct_directory(self, tmp_path):
@@ -453,7 +455,7 @@ class TomlIntegrationTests:
         i = get_integration(self.KEY)
         cmd_dir = i.commands_dest(project)
         assert cmd_dir.is_dir(), f"Commands directory {cmd_dir} not created"
-        commands = sorted(cmd_dir.glob("speckit.*.toml"))
+        commands = sorted(cmd_dir.glob("sp.*.toml"))
         assert len(commands) > 0, f"No command files in {cmd_dir}"
 
     def test_init_options_includes_context_file(self, tmp_path):
@@ -482,18 +484,6 @@ class TomlIntegrationTests:
 
     # -- Complete file inventory ------------------------------------------
 
-    COMMAND_STEMS = [
-        "analyze",
-        "checklist",
-        "clarify",
-        "constitution",
-        "implement",
-        "plan",
-        "specify",
-        "tasks",
-        "taskstoissues",
-    ]
-
     def _expected_files(self, script_variant: str) -> list[str]:
         """Build the expected file list for this integration + script variant."""
         i = get_integration(self.KEY)
@@ -501,8 +491,7 @@ class TomlIntegrationTests:
         files = []
 
         # Command files (.toml)
-        for stem in self.COMMAND_STEMS:
-            files.append(f"{cmd_dir}/speckit.{stem}.toml")
+        files.extend(command_files(cmd_dir, ".toml"))
 
         # Framework files
         files.append(".specify/integration.json")
@@ -538,7 +527,7 @@ class TomlIntegrationTests:
         ]:
             files.append(f".specify/templates/{name}")
 
-        files.append(".specify/memory/constitution.md")
+        files.extend(project_scaffold_files())
         # Bundled workflow
         files.append(".specify/workflows/speckit/workflow.yml")
         files.append(".specify/workflows/workflow-registry.json")

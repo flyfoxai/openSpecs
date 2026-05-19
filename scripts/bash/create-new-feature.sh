@@ -324,6 +324,141 @@ fi
 
 FEATURE_DIR="$SPECS_DIR/$BRANCH_NAME"
 SPEC_FILE="$FEATURE_DIR/spec.md"
+FEATURE_DATE="$(date +%Y-%m-%d)"
+
+feature_title_from_suffix() {
+    local suffix="$1"
+    printf '%s\n' "$suffix" | tr '-' ' ' | awk '{
+        for (i = 1; i <= NF; i++) {
+            $i = toupper(substr($i, 1, 1)) substr($i, 2)
+        }
+        print
+    }'
+}
+
+replace_feature_placeholders() {
+    local file="$1"
+    local feature_title="$2"
+    local feature_path="$3"
+    local tmp_file
+    local branch_escaped date_escaped title_escaped description_escaped path_escaped
+
+    tmp_file="${file}.tmp.$$"
+
+    branch_escaped=$(printf '%s' "$BRANCH_NAME" | sed 's/[\\&#]/\\&/g')
+    date_escaped=$(printf '%s' "$FEATURE_DATE" | sed 's/[\\&#]/\\&/g')
+    title_escaped=$(printf '%s' "$feature_title" | sed 's/[\\&#]/\\&/g')
+    description_escaped=$(printf '%s' "$FEATURE_DESCRIPTION" | sed 's/[\\&#]/\\&/g')
+    path_escaped=$(printf '%s' "$feature_path" | sed 's/[\\&#]/\\&/g')
+
+    sed \
+        -e "s#__FEATURE_BRANCH__#${branch_escaped}#g" \
+        -e "s#__FEATURE_DATE__#${date_escaped}#g" \
+        -e "s#__FEATURE_TITLE__#${title_escaped}#g" \
+        -e "s#__FEATURE_DESCRIPTION__#${description_escaped}#g" \
+        -e "s#__FEATURE_PATH__#${path_escaped}#g" \
+        "$file" > "$tmp_file"
+    mv "$tmp_file" "$file"
+}
+
+initialize_feature_scaffold() {
+    local feature_title="$1"
+    local feature_path="specs/$BRANCH_NAME"
+    local scaffold_root="$REPO_ROOT/.specify/templates/feature"
+
+    if [ ! -d "$scaffold_root" ]; then
+        return 0
+    fi
+
+    while IFS= read -r src; do
+        [ -f "$src" ] || continue
+        local rel="${src#"$scaffold_root/"}"
+        local dst="$FEATURE_DIR/$rel"
+        mkdir -p "$(dirname "$dst")"
+        if [ ! -e "$dst" ]; then
+            cp "$src" "$dst"
+            replace_feature_placeholders "$dst" "$feature_title" "$feature_path"
+        fi
+    done < <(find "$scaffold_root" -type f | sort)
+}
+
+persist_active_feature() {
+    local feature_path="specs/$BRANCH_NAME"
+    mkdir -p "$REPO_ROOT/.specify"
+
+    if command -v jq >/dev/null 2>&1; then
+        jq -cn \
+            --arg branch "$BRANCH_NAME" \
+            --arg feature_directory "$feature_path" \
+            --arg spec_file "$feature_path/spec.md" \
+            --arg created_at "$FEATURE_DATE" \
+            '{branch:$branch,feature_directory:$feature_directory,spec_file:$spec_file,created_at:$created_at}' \
+            > "$REPO_ROOT/.specify/feature.json"
+    else
+        printf '{"branch":"%s","feature_directory":"%s","spec_file":"%s","created_at":"%s"}\n' \
+            "$(json_escape "$BRANCH_NAME")" "$(json_escape "$feature_path")" "$(json_escape "$feature_path/spec.md")" "$(json_escape "$FEATURE_DATE")" \
+            > "$REPO_ROOT/.specify/feature.json"
+    fi
+}
+
+refresh_project_routing_memory() {
+    local active_context="$REPO_ROOT/.specify/memory/active-context.md"
+    local project_index="$REPO_ROOT/.specify/memory/project-index.md"
+    local feature_map="$REPO_ROOT/.specify/memory/feature-map.md"
+    local tmp_file
+
+    if [ -f "$active_context" ]; then
+        tmp_file="${active_context}.tmp.$$"
+        awk -v branch="$BRANCH_NAME" -v refresh_date="$FEATURE_DATE" '
+            BEGIN { FS="|"; OFS="|" }
+            /^\| Active Feature \|/ {
+                print "| Active Feature | " branch " |"
+                next
+            }
+            /^\| Refresh Date \|/ {
+                print "| Refresh Date | " refresh_date " |"
+                next
+            }
+            { print }
+        ' "$active_context" > "$tmp_file"
+        mv "$tmp_file" "$active_context"
+    fi
+
+    if [ -f "$project_index" ]; then
+        tmp_file="${project_index}.tmp.$$"
+        awk -v branch="$BRANCH_NAME" -v refresh_date="$FEATURE_DATE" '
+            BEGIN { FS="|"; OFS="|" }
+            /^\| Active Feature \|/ {
+                print "| Active Feature | " branch " |"
+                next
+            }
+            /^\| Refresh Date \|/ {
+                print "| Refresh Date | " refresh_date " |"
+                next
+            }
+            { print }
+        ' "$project_index" > "$tmp_file"
+        mv "$tmp_file" "$project_index"
+    fi
+
+    if [ -f "$feature_map" ]; then
+        if grep -Fq "| $BRANCH_NAME |" "$feature_map"; then
+            return 0
+        fi
+        tmp_file="${feature_map}.tmp.$$"
+        awk -v branch="$BRANCH_NAME" '
+            BEGIN { inserted = 0 }
+            {
+                print
+                if (!inserted && /^\| --- \| --- \| --- \| --- \| --- \| --- \| --- \|$/) {
+                    print "| " branch " | tbd | spec initialized | n/a | n/a | `specs/" branch "/memory/index.md` | not selected |"
+                    inserted = 1
+                }
+            }
+        ' "$feature_map" > "$tmp_file"
+        mv "$tmp_file" "$feature_map"
+    fi
+}
 
 if [ "$DRY_RUN" != true ]; then
     if [ "$HAS_GIT" = true ]; then
@@ -371,11 +506,16 @@ if [ "$DRY_RUN" != true ]; then
         TEMPLATE=$(resolve_template "spec-template" "$REPO_ROOT") || true
         if [ -n "$TEMPLATE" ] && [ -f "$TEMPLATE" ]; then
             cp "$TEMPLATE" "$SPEC_FILE"
+            replace_feature_placeholders "$SPEC_FILE" "$(feature_title_from_suffix "$BRANCH_SUFFIX")" "specs/$BRANCH_NAME"
         else
             echo "Warning: Spec template not found; created empty spec file" >&2
             touch "$SPEC_FILE"
         fi
     fi
+
+    initialize_feature_scaffold "$(feature_title_from_suffix "$BRANCH_SUFFIX")"
+    persist_active_feature
+    refresh_project_routing_memory
 
     # Inform the user how to persist the feature variable in their own shell
     printf '# To persist: export SPECIFY_FEATURE=%q\n' "$BRANCH_NAME" >&2

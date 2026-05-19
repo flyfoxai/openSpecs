@@ -25,6 +25,8 @@ import yaml
 from packaging import version as pkg_version
 from packaging.specifiers import SpecifierSet, InvalidSpecifier
 
+from specify_cli.command_names import skill_directory_name
+
 _FALLBACK_CORE_COMMAND_NAMES = frozenset({
     "analyze",
     "checklist",
@@ -2431,13 +2433,13 @@ class HookExecutor:
 
     @staticmethod
     def _skill_name_from_command(command: Any) -> str:
-        """Map a command id like speckit.plan to speckit-plan skill name."""
+        """Map a command id like sp.plan to its skill directory name."""
         if not isinstance(command, str):
             return ""
         command_id = command.strip()
-        if not command_id.startswith("speckit."):
+        if not command_id.startswith(("sp.", "speckit.")):
             return ""
-        return f"speckit-{command_id[len('speckit.'):].replace('.', '-')}"
+        return skill_directory_name(command_id)
 
     def _render_hook_invocation(self, command: Any) -> str:
         """Render an agent-specific invocation string for a hook command."""

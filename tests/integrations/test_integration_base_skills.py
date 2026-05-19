@@ -5,16 +5,20 @@ Each per-agent test file sets ``KEY``, ``FOLDER``, ``COMMANDS_SUBDIR``,
 logic from ``SkillsIntegrationTests``.
 
 Mirrors ``MarkdownIntegrationTests`` / ``TomlIntegrationTests`` closely,
-adapted for the ``speckit-<name>/SKILL.md`` skills layout.
+adapted for the resolved skills layout: ``sp-<name>/SKILL.md`` for built-ins
+and ``speckit-<name>/SKILL.md`` for extensions/presets.
 """
 
 import os
+from pathlib import Path
 
 import yaml
 
 from specify_cli.integrations import INTEGRATION_REGISTRY, get_integration
 from specify_cli.integrations.base import SkillsIntegration
 from specify_cli.integrations.manifest import IntegrationManifest
+
+from .sp_expected import command_stems, project_scaffold_files, skill_files
 
 
 class SkillsIntegrationTests:
@@ -76,7 +80,7 @@ class SkillsIntegrationTests:
         for f in skill_files:
             assert f.exists()
             assert f.name == "SKILL.md"
-            assert f.parent.name.startswith("speckit-")
+            assert f.parent.name.startswith("sp-")
 
     def test_setup_writes_to_correct_directory(self, tmp_path):
         i = get_integration(self.KEY)
@@ -87,29 +91,26 @@ class SkillsIntegrationTests:
         skill_files = [f for f in created if "scripts" not in f.parts]
         assert len(skill_files) > 0, "No skill files were created"
         for f in skill_files:
-            # Each SKILL.md is in speckit-<name>/ under the skills directory
+            # Each SKILL.md is in sp-<name>/ under the skills directory
             assert f.resolve().parent.parent == expected_dir.resolve(), (
                 f"{f} is not under {expected_dir}"
             )
 
     def test_skill_directory_structure(self, tmp_path):
-        """Each command produces speckit-<name>/SKILL.md."""
+        """Each built-in command produces sp-<name>/SKILL.md."""
         i = get_integration(self.KEY)
         m = IntegrationManifest(self.KEY, tmp_path)
         created = i.setup(tmp_path, m)
         skill_files = [f for f in created if "scripts" not in f.parts]
 
-        expected_commands = {
-            "analyze", "checklist", "clarify", "constitution",
-            "implement", "plan", "specify", "tasks", "taskstoissues",
-        }
+        expected_commands = set(command_stems())
 
         # Derive command names from the skill directory names
         actual_commands = set()
         for f in skill_files:
-            skill_dir_name = f.parent.name  # e.g. "speckit-plan"
-            assert skill_dir_name.startswith("speckit-")
-            actual_commands.add(skill_dir_name.removeprefix("speckit-"))
+            skill_dir_name = f.parent.name  # e.g. "sp-plan"
+            assert skill_dir_name.startswith("sp-")
+            actual_commands.add(skill_dir_name.removeprefix("sp-"))
 
         assert actual_commands == expected_commands
 
@@ -170,10 +171,10 @@ class SkillsIntegrationTests:
         assert len(skill_files) > 0
         for f in skill_files:
             content = f.read_text(encoding="utf-8")
-            # Skills agents must use /speckit-<name>, not /speckit.<name>
+            # Skills agents must not use dotted slash-command references.
             assert "/speckit." not in content, (
                 f"{f.name} contains dot-notation /speckit. reference; "
-                f"skills agents must use /speckit-<name>"
+                "skills agents must use hyphenated command invocations"
             )
 
     def test_skill_body_has_content(self, tmp_path):
@@ -196,7 +197,7 @@ class SkillsIntegrationTests:
             return
         m = IntegrationManifest(self.KEY, tmp_path)
         i.setup(tmp_path, m)
-        plan_file = i.skills_dest(tmp_path) / "speckit-plan" / "SKILL.md"
+        plan_file = i.skills_dest(tmp_path) / "sp-plan" / "SKILL.md"
         assert plan_file.exists(), f"Plan skill {plan_file} not created"
         content = plan_file.read_text(encoding="utf-8")
         assert i.context_file in content, (
@@ -358,61 +359,56 @@ class SkillsIntegrationTests:
 
     # -- Complete file inventory ------------------------------------------
 
-    _SKILL_COMMANDS = [
-        "analyze", "checklist", "clarify", "constitution",
-        "implement", "plan", "specify", "tasks", "taskstoissues",
-    ]
-
     def _expected_files(self, script_variant: str) -> list[str]:
         """Build the full expected file list for a given script variant."""
         i = get_integration(self.KEY)
         skills_prefix = i.config["folder"].rstrip("/") + "/" + i.config.get("commands_subdir", "skills")
 
-        files = []
+        files = set()
         # Skill files
-        for cmd in self._SKILL_COMMANDS:
-            files.append(f"{skills_prefix}/speckit-{cmd}/SKILL.md")
+        files.update(skill_files(skills_prefix))
         # Integration metadata
-        files += [
+        files.update([
             ".specify/init-options.json",
             ".specify/integration.json",
             f".specify/integrations/{self.KEY}.manifest.json",
             ".specify/integrations/speckit.manifest.json",
             ".specify/memory/constitution.md",
-        ]
+        ])
         # Script variant
         if script_variant == "sh":
-            files += [
+            files.update([
                 ".specify/scripts/bash/check-prerequisites.sh",
                 ".specify/scripts/bash/common.sh",
                 ".specify/scripts/bash/create-new-feature.sh",
                 ".specify/scripts/bash/setup-plan.sh",
                 ".specify/scripts/bash/setup-tasks.sh",
-            ]
+            ])
         else:
-            files += [
+            files.update([
                 ".specify/scripts/powershell/check-prerequisites.ps1",
                 ".specify/scripts/powershell/common.ps1",
                 ".specify/scripts/powershell/create-new-feature.ps1",
                 ".specify/scripts/powershell/setup-plan.ps1",
                 ".specify/scripts/powershell/setup-tasks.ps1",
-            ]
+            ])
         # Templates
-        files += [
+        files.update([
             ".specify/templates/checklist-template.md",
             ".specify/templates/constitution-template.md",
             ".specify/templates/plan-template.md",
             ".specify/templates/spec-template.md",
             ".specify/templates/tasks-template.md",
-        ]
+        ])
         # Bundled workflow
-        files += [
+        files.update([
             ".specify/workflows/speckit/workflow.yml",
             ".specify/workflows/workflow-registry.json",
-        ]
+        ])
+        files.update(project_scaffold_files())
         # Agent context file (if set)
         if i.context_file:
-            files.append(i.context_file)
+            files.add(i.context_file)
         return sorted(files)
 
     def test_complete_file_inventory_sh(self, tmp_path):

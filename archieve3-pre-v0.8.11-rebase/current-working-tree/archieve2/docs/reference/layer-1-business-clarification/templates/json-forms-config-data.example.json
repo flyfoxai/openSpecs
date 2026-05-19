@@ -1,0 +1,28 @@
+{
+  "searchSettings": {
+    "userCodexDir": "/Users/demo/.codex",
+    "workspaceRoots": [
+      "/Users/demo/Projects"
+    ],
+    "manualProjects": [
+      "/Users/demo/Projects/providerchange",
+      "/Users/demo/Projects/another-project"
+    ]
+  },
+  "configItem": {
+    "key": "model",
+    "includeInToml": true,
+    "requiredItem": true,
+    "currentValueType": "enum",
+    "enumValue": "gpt-5.4",
+    "summary": "当前主模型名称，用于指定默认调用模型。",
+    "scopeMode": "project",
+    "targetProjects": [
+      "/Users/demo/Projects/providerchange"
+    ]
+  },
+  "otherSettings": {
+    "preserveComments": "yes",
+    "showUnknownKeys": "yes"
+  }
+}

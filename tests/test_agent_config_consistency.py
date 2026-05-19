@@ -225,13 +225,13 @@ class TestAgentConfigConsistency:
             )
 
     def test_skills_agent_command_token_resolves_with_hyphen(self, tmp_path):
-        """__SPECKIT_COMMAND_*__ tokens in extension commands resolve to /speckit-<cmd>
+        """__SPECKIT_COMMAND_*__ tokens resolve to /sp-<cmd> for built-ins
         when registered for a skills-based agent (e.g. claude).
 
         Regression guard: before the fix, _build_agent_configs() did not
         propagate invoke_separator from the integration class, so
-        register_commands() fell back to '.' and emitted /speckit.specify instead
-        of /speckit-specify for skills agents.
+        register_commands() fell back to '.' and emitted /sp.specify instead
+        of /sp-specify for skills agents.
         """
         import re
         from pathlib import Path
@@ -272,14 +272,14 @@ class TestAgentConfigConsistency:
             f"Expected Claude skill file not found at {skill_file}"
         )
         content = skill_file.read_text(encoding="utf-8")
-        assert "/speckit-specify" in content, (
-            "Expected '/speckit-specify' (hyphen) in generated Claude skill for git.feature; "
+        assert "/sp-specify" in content, (
+            "Expected '/sp-specify' (hyphen) in generated Claude skill for git.feature; "
             "__SPECKIT_COMMAND_SPECIFY__ was not resolved with the correct separator."
         )
         # Negative lookbehind (?<![a-zA-Z0-9_]) excludes file-path occurrences
         # such as 'source: git:commands/speckit.git.feature.md' in frontmatter,
         # where the '/' is a path separator preceded by a word character.
-        assert not re.search(r"(?<![a-zA-Z0-9_])/speckit\.[a-z]", content), (
-            "Found dot-notation command ref (/speckit.<cmd>) in generated Claude skill. "
+        assert not re.search(r"(?<![a-zA-Z0-9_])/sp\.[a-z]", content), (
+            "Found dot-notation command ref (/sp.<cmd>) in generated Claude skill. "
             "Skills agents must use hyphen notation."
         )

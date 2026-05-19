@@ -1075,14 +1075,14 @@ def init(
 
     def _display_cmd(name: str) -> str:
         if codex_skill_mode or agy_skill_mode or trae_skill_mode:
-            return f"$speckit-{name}"
+            return f"$sp-{name}"
         if claude_skill_mode:
-            return f"/speckit-{name}"
+            return f"/sp-{name}"
         if kimi_skill_mode:
-            return f"/skill:speckit-{name}"
+            return f"/skill:sp-{name}"
         if cursor_agent_skill_mode or copilot_skill_mode or devin_skill_mode:
-            return f"/speckit-{name}"
-        return f"/speckit.{name}"
+            return f"/sp-{name}"
+        return f"/sp.{name}"
 
     steps_lines.append(f"{step_num}. Start using {usage_label} with your coding agent:")
 

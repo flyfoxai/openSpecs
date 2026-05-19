@@ -1,6 +1,9 @@
 """Antigravity (agy) integration — skills-based agent.
 
-Antigravity uses ``.agents/skills/speckit-<name>/SKILL.md`` layout (enforced since v1.20.5).
+Antigravity installs skills under ``.agents/skills/`` (enforced since
+v1.20.5). The directory name is resolved by ``skill_directory_name()``:
+built-in commands use ``sp-<name>/SKILL.md`` and extension/preset
+commands use ``speckit-<extension>-<name>/SKILL.md``.
 """
 
 from __future__ import annotations

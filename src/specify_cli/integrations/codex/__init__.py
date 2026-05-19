@@ -1,7 +1,10 @@
 """Codex CLI integration — skills-based agent.
 
-Codex uses the ``.agents/skills/speckit-<name>/SKILL.md`` layout.
-Commands are deprecated; ``--skills`` defaults to ``True``.
+Codex installs skills under ``.agents/skills/``. The directory name is
+resolved by ``skill_directory_name()``: built-in commands use
+``sp-<name>/SKILL.md`` and extension/preset commands use
+``speckit-<extension>-<name>/SKILL.md``. Commands are deprecated;
+``--skills`` defaults to ``True``.
 """
 
 from __future__ import annotations

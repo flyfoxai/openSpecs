@@ -1,7 +1,10 @@
 """Cursor IDE integration.
 
-Cursor Agent uses the ``.cursor/skills/speckit-<name>/SKILL.md`` layout.
-Commands are deprecated; ``--skills`` defaults to ``True``.
+Cursor Agent installs skills under ``.cursor/skills/``. The directory
+name is resolved by ``skill_directory_name()``: built-in commands use
+``sp-<name>/SKILL.md`` and extension/preset commands use
+``speckit-<extension>-<name>/SKILL.md``. Commands are deprecated;
+``--skills`` defaults to ``True``.
 """
 
 from __future__ import annotations

@@ -15,6 +15,8 @@ from typing import Any, Dict, List, Optional
 
 import yaml
 
+from specify_cli.command_names import skill_directory_name
+
 
 def _build_agent_configs() -> dict[str, Any]:
     """Derive CommandRegistrar.AGENT_CONFIGS from INTEGRATION_REGISTRY."""
@@ -403,12 +405,7 @@ class CommandRegistrar:
         if agent_config["extension"] != "/SKILL.md":
             return cmd_name
 
-        short_name = cmd_name
-        if short_name.startswith("speckit."):
-            short_name = short_name[len("speckit.") :]
-        short_name = short_name.replace(".", "-")
-
-        return f"speckit-{short_name}"
+        return skill_directory_name(cmd_name)
 
     @staticmethod
     def _ensure_inside(candidate: Path, base: Path) -> None:

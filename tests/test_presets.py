@@ -2085,7 +2085,7 @@ class TestSelfTestPreset:
         install_self_test_preset(manager)
 
         # Check the skill was registered
-        cmd_file = claude_dir / "speckit-specify" / "SKILL.md"
+        cmd_file = claude_dir / "sp-specify" / "SKILL.md"
         assert cmd_file.exists(), "Skill not registered in .claude/skills/"
         content = cmd_file.read_text()
         assert "self-test" in content
@@ -2115,7 +2115,7 @@ class TestSelfTestPreset:
         manager = PresetManager(project_dir)
         install_self_test_preset(manager)
 
-        cmd_file = claude_dir / "speckit-specify" / "SKILL.md"
+        cmd_file = claude_dir / "sp-specify" / "SKILL.md"
         assert cmd_file.exists()
 
         manager.remove("self-test")
@@ -3317,11 +3317,11 @@ class TestPresetEnableDisable:
 LEAN_PRESET_DIR = Path(__file__).parent.parent / "presets" / "lean"
 
 LEAN_COMMAND_NAMES = [
-    "speckit.specify",
-    "speckit.plan",
-    "speckit.tasks",
-    "speckit.implement",
-    "speckit.constitution",
+    "sp.specify",
+    "sp.plan",
+    "sp.tasks",
+    "sp.implement",
+    "sp.constitution",
 ]
 
 
@@ -3360,7 +3360,7 @@ class TestLeanPreset:
         from specify_cli.agents import CommandRegistrar
 
         for name in LEAN_COMMAND_NAMES:
-            cmd_path = LEAN_PRESET_DIR / "commands" / f"speckit.{name.split('.')[-1]}.md"
+            cmd_path = LEAN_PRESET_DIR / "commands" / f"sp.{name.split('.')[-1]}.md"
             content = cmd_path.read_text()
             frontmatter, _ = CommandRegistrar.parse_frontmatter(content)
             assert "scripts" not in frontmatter, f"{name} should not have scripts in frontmatter"
@@ -3368,7 +3368,7 @@ class TestLeanPreset:
     def test_lean_commands_have_no_hooks(self):
         """Verify lean commands do not contain extension hook boilerplate."""
         for name in LEAN_COMMAND_NAMES:
-            cmd_path = LEAN_PRESET_DIR / "commands" / f"speckit.{name.split('.')[-1]}.md"
+            cmd_path = LEAN_PRESET_DIR / "commands" / f"sp.{name.split('.')[-1]}.md"
             content = cmd_path.read_text()
             assert "hooks." not in content, f"{name} should not reference extension hooks"
             assert "extensions.yml" not in content, f"{name} should not reference extensions.yml"

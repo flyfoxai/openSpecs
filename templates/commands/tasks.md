@@ -1,17 +1,13 @@
 ---
-description: Generate an actionable, dependency-ordered tasks.md for the feature based on available design artifacts.
-handoffs: 
-  - label: Analyze For Consistency
-    agent: speckit.analyze
-    prompt: Run a project analysis for consistency
-    send: true
-  - label: Implement Project
-    agent: speckit.implement
-    prompt: Start the implementation in phases
+description: Bind worksets, deliverables, and acceptance items into an executable documentation task set.
+handoffs:
+  - label: Analyze Document Set
+    agent: __SPECKIT_COMMAND_ANALYZE__
+    prompt: Verify whether the full document system is strong enough for later automation.
     send: true
 scripts:
-  sh: scripts/bash/setup-tasks.sh --json
-  ps: scripts/powershell/setup-tasks.ps1 -Json
+  sh: scripts/bash/check-prerequisites.sh --json --require-plan
+  ps: scripts/powershell/check-prerequisites.ps1 -Json -RequirePlan
 ---
 
 ## User Input
@@ -26,15 +22,15 @@ You **MUST** consider the user input before proceeding (if not empty).
 
 **Check for extension hooks (before tasks generation)**:
 - Check if `.specify/extensions.yml` exists in the project root.
-- If it exists, read it and look for entries under the `hooks.before_tasks` key
-- If the YAML cannot be parsed or is invalid, skip hook checking silently and continue normally
+- If it exists, read it and look for entries under the `hooks.before_tasks` key.
+- If the YAML cannot be parsed or is invalid, skip hook checking silently and continue normally.
 - Filter out hooks where `enabled` is explicitly `false`. Treat hooks without an `enabled` field as enabled by default.
 - For each remaining hook, do **not** attempt to interpret or evaluate hook `condition` expressions:
-  - If the hook has no `condition` field, or it is null/empty, treat the hook as executable
-  - If the hook defines a non-empty `condition`, skip the hook and leave condition evaluation to the HookExecutor implementation
+  - If the hook has no `condition` field, or it is null or empty, treat the hook as executable.
+  - If the hook defines a non-empty `condition`, skip the hook and leave condition evaluation to the host hook executor.
 - For each executable hook, output the following based on its `optional` flag:
   - **Optional hook** (`optional: true`):
-    ```
+    ```text
     ## Extension Hooks
 
     **Optional Pre-Hook**: {extension}
@@ -45,159 +41,101 @@ You **MUST** consider the user input before proceeding (if not empty).
     To execute: `/{command}`
     ```
   - **Mandatory hook** (`optional: false`):
-    ```
+    ```text
     ## Extension Hooks
 
     **Automatic Pre-Hook**: {extension}
     Executing: `/{command}`
     EXECUTE_COMMAND: {command}
-    
+
     Wait for the result of the hook command before proceeding to the Outline.
     ```
 - If no hooks are registered or `.specify/extensions.yml` does not exist, skip silently
 
+# sp.tasks
+
 ## Outline
 
-1. **Setup**: Run `{SCRIPT}` from repo root and parse FEATURE_DIR, TASKS_TEMPLATE, and AVAILABLE_DOCS list. `FEATURE_DIR` and `TASKS_TEMPLATE` must be absolute paths when provided. `AVAILABLE_DOCS` is a list of document names/relative paths available under `FEATURE_DIR` (for example `research.md` or `contracts/`). For single quotes in args like "I'm Groot", use escape syntax: e.g 'I'\''m Groot' (or double-quote if possible: "I'm Groot").
+Goal: Bind worksets, deliverables, ownership, and acceptance items into an executable documentation task set that remains traceable to the active feature plan.
 
-2. **Load design documents**: Read from FEATURE_DIR:
-   - **Required**: plan.md (tech stack, libraries, structure), spec.md (user stories with priorities)
-   - **Optional**: data-model.md (entities), contracts/ (interface contracts), research.md (decisions), quickstart.md (test scenarios)
-   - Note: Not all projects have all documents. Generate tasks based on what's available.
+Global rules:
+- Stay within documentation work only.
+- Reuse existing project context and active feature state.
+- Do not write production code.
+- If `.specify/memory/project-index.md` exists, read it first and use it as the project routing entry.
+- If `.specify/memory/active-context.md` exists, use it to pick the current smallest useful read set.
+- If `specs/<feature>/memory/index.md` exists, read it first and use it as the feature routing entry.
+- Expand to source documents only for the current target area.
+- If required inputs are missing or unstable, stop and report the gap explicitly.
 
-3. **Execute task generation workflow**:
-   - Load plan.md and extract tech stack, libraries, project structure
-   - Load spec.md and extract user stories with their priorities (P1, P2, P3, etc.)
-   - If data-model.md exists: Extract entities and map to user stories
-   - If contracts/ exists: Map interface contracts to user stories
-   - If research.md exists: Extract decisions for setup tasks
-   - Generate tasks organized by user story (see Task Generation Rules below)
-   - Generate dependency graph showing user story completion order
-   - Create parallel execution examples per user story
-   - Validate task completeness (each user story has all needed tasks, independently testable)
+Execution flow:
 
-4. **Generate tasks.md**: Read the tasks template from TASKS_TEMPLATE (from the JSON output above) and use it as structure. If TASKS_TEMPLATE is empty, fall back to `.specify/templates/tasks-template.md`. Fill with:
-   - Correct feature name from plan.md
-   - Phase 1: Setup tasks (project initialization)
-   - Phase 2: Foundational tasks (blocking prerequisites for all user stories)
-   - Phase 3+: One phase per user story (in priority order from spec.md)
-   - Each phase includes: story goal, independent test criteria, tests (if requested), implementation tasks
-   - Final Phase: Polish & cross-cutting concerns
-   - All tasks must follow the strict checklist format (see Task Generation Rules below)
-   - Clear file paths for each task
-   - Dependencies section showing story completion order
-   - Parallel execution examples per story
-   - Implementation strategy section (MVP first, incremental delivery)
+1. Run `{SCRIPT}` from repo root once and parse the active feature routing.
+2. Load the smallest useful task-generation context:
+   - `specs/<feature>/memory/index.md`
+   - `specs/<feature>/memory/worksets/index.md`
+   - `specs/<feature>/plan.md`
+   - `specs/<feature>/delivery/*`
+3. Generate or refresh `specs/<feature>/tasks.md`.
+   - Use `.specify/templates/feature/tasks.md` as the structural reference when creating or repairing the task set.
+   - Break the delivery plan into explicit documentation tasks tied to worksets and acceptance.
+   - Keep task ownership, dependency order, and output targets visible.
+   - Keep the task set executable as documentation work, not production implementation.
+4. Refresh memory if task grouping changes routing.
+   - Refresh `specs/<feature>/memory/worksets/index.md`
+   - Refresh `specs/<feature>/memory/worksets/ws-*.md` where needed
+   - Refresh `specs/<feature>/memory/index.md`
+5. Validate before finishing.
+   - Confirm every major task maps back to a workset or delivery artifact.
+   - Confirm dependencies and acceptance hooks are explicit.
+   - Confirm the active local work area can be discovered from memory.
 
-5. **Report**: Output path to generated tasks.md and summary:
-   - Total task count
-   - Task count per user story
-   - Parallel opportunities identified
-   - Independent test criteria for each story
-   - Suggested MVP scope (typically just User Story 1)
-   - Format validation: Confirm ALL tasks follow the checklist format (checkbox, ID, labels, file paths)
+## Output
 
-6. **Check for extension hooks**: After tasks.md is generated, check if `.specify/extensions.yml` exists in the project root.
-   - If it exists, read it and look for entries under the `hooks.after_tasks` key
-   - If the YAML cannot be parsed or is invalid, skip hook checking silently and continue normally
-   - Filter out hooks where `enabled` is explicitly `false`. Treat hooks without an `enabled` field as enabled by default.
-   - For each remaining hook, do **not** attempt to interpret or evaluate hook `condition` expressions:
-     - If the hook has no `condition` field, or it is null/empty, treat the hook as executable
-     - If the hook defines a non-empty `condition`, skip the hook and leave condition evaluation to the HookExecutor implementation
-   - For each executable hook, output the following based on its `optional` flag:
-     - **Optional hook** (`optional: true`):
-       ```
-       ## Extension Hooks
+- Create or update `specs/<feature>/tasks.md`
+- Refresh `specs/<feature>/memory/worksets/index.md`
+- Refresh `specs/<feature>/memory/worksets/ws-*.md` where needed
+- Refresh `specs/<feature>/memory/index.md`
 
-       **Optional Hook**: {extension}
-       Command: `/{command}`
-       Description: {description}
+## Key Rules
 
-       Prompt: {prompt}
-       To execute: `/{command}`
-       ```
-     - **Mandatory hook** (`optional: false`):
-       ```
-       ## Extension Hooks
+- Do not write production code tasks that are disconnected from the document outputs.
+- Do not leave dependencies implicit.
+- Do not merge unrelated worksets into one task bucket without justification.
+- Keep task outputs anchored to documentation artifacts.
 
-       **Automatic Hook**: {extension}
-       Executing: `/{command}`
-       EXECUTE_COMMAND: {command}
-       ```
-   - If no hooks are registered or `.specify/extensions.yml` does not exist, skip silently
+## Post-Execution Checks
 
-Context for task generation: {ARGS}
+**Check for extension hooks (after tasks generation)**:
+- Check if `.specify/extensions.yml` exists in the project root.
+- If it exists, read it and look for entries under the `hooks.after_tasks` key.
+- If the YAML cannot be parsed or is invalid, skip hook checking silently and continue normally.
+- Filter out hooks where `enabled` is explicitly `false`. Treat hooks without an `enabled` field as enabled by default.
+- For each remaining hook, do **not** attempt to interpret or evaluate hook `condition` expressions:
+  - If the hook has no `condition` field, or it is null or empty, treat the hook as executable.
+  - If the hook defines a non-empty `condition`, skip the hook and leave condition evaluation to the host hook executor.
+- For each executable hook, output the following based on its `optional` flag:
+  - **Optional hook** (`optional: true`):
+    ```text
+    ## Extension Hooks
 
-The tasks.md should be immediately executable - each task must be specific enough that an LLM can complete it without additional context.
+    **Optional Hook**: {extension}
+    Command: `/{command}`
+    Description: {description}
 
-## Task Generation Rules
+    Prompt: {prompt}
+    To execute: `/{command}`
+    ```
+  - **Mandatory hook** (`optional: false`):
+    ```text
+    ## Extension Hooks
 
-**CRITICAL**: Tasks MUST be organized by user story to enable independent implementation and testing.
+    **Automatic Hook**: {extension}
+    Executing: `/{command}`
+    EXECUTE_COMMAND: {command}
+    ```
+- If no hooks are registered or `.specify/extensions.yml` does not exist, skip silently
 
-**Tests are OPTIONAL**: Only generate test tasks if explicitly requested in the feature specification or if user requests TDD approach.
+## Next
 
-### Checklist Format (REQUIRED)
-
-Every task MUST strictly follow this format:
-
-```text
-- [ ] [TaskID] [P?] [Story?] Description with file path
-```
-
-**Format Components**:
-
-1. **Checkbox**: ALWAYS start with `- [ ]` (markdown checkbox)
-2. **Task ID**: Sequential number (T001, T002, T003...) in execution order
-3. **[P] marker**: Include ONLY if task is parallelizable (different files, no dependencies on incomplete tasks)
-4. **[Story] label**: REQUIRED for user story phase tasks only
-   - Format: [US1], [US2], [US3], etc. (maps to user stories from spec.md)
-   - Setup phase: NO story label
-   - Foundational phase: NO story label  
-   - User Story phases: MUST have story label
-   - Polish phase: NO story label
-5. **Description**: Clear action with exact file path
-
-**Examples**:
-
-- ✅ CORRECT: `- [ ] T001 Create project structure per implementation plan`
-- ✅ CORRECT: `- [ ] T005 [P] Implement authentication middleware in src/middleware/auth.py`
-- ✅ CORRECT: `- [ ] T012 [P] [US1] Create User model in src/models/user.py`
-- ✅ CORRECT: `- [ ] T014 [US1] Implement UserService in src/services/user_service.py`
-- ❌ WRONG: `- [ ] Create User model` (missing ID and Story label)
-- ❌ WRONG: `T001 [US1] Create model` (missing checkbox)
-- ❌ WRONG: `- [ ] [US1] Create User model` (missing Task ID)
-- ❌ WRONG: `- [ ] T001 [US1] Create model` (missing file path)
-
-### Task Organization
-
-1. **From User Stories (spec.md)** - PRIMARY ORGANIZATION:
-   - Each user story (P1, P2, P3...) gets its own phase
-   - Map all related components to their story:
-     - Models needed for that story
-     - Services needed for that story
-     - Interfaces/UI needed for that story
-     - If tests requested: Tests specific to that story
-   - Mark story dependencies (most stories should be independent)
-
-2. **From Contracts**:
-   - Map each interface contract → to the user story it serves
-   - If tests requested: Each interface contract → contract test task [P] before implementation in that story's phase
-
-3. **From Data Model**:
-   - Map each entity to the user story(ies) that need it
-   - If entity serves multiple stories: Put in earliest story or Setup phase
-   - Relationships → service layer tasks in appropriate story phase
-
-4. **From Setup/Infrastructure**:
-   - Shared infrastructure → Setup phase (Phase 1)
-   - Foundational/blocking tasks → Foundational phase (Phase 2)
-   - Story-specific setup → within that story's phase
-
-### Phase Structure
-
-- **Phase 1**: Setup (project initialization)
-- **Phase 2**: Foundational (blocking prerequisites - MUST complete before user stories)
-- **Phase 3+**: User Stories in priority order (P1, P2, P3...)
-  - Within each story: Tests (if requested) → Models → Services → Endpoints → Integration
-  - Each phase should be a complete, independently testable increment
-- **Final Phase**: Polish & Cross-Cutting Concerns
+- Suggest `__SPECKIT_COMMAND_ANALYZE__`.

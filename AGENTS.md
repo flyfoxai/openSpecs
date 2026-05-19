@@ -43,7 +43,7 @@ The registry is the **single source of truth for Python integration metadata**. 
 | Standard markdown commands (`.md`) | `MarkdownIntegration` |
 | TOML-format commands (`.toml`) | `TomlIntegration` |
 | YAML recipe files (`.yaml`) | `YamlIntegration` |
-| Skill directories (`speckit-<name>/SKILL.md`) | `SkillsIntegration` |
+| Skill directories (`sp-<name>/SKILL.md` for built-ins, `speckit-<name>/SKILL.md` for extensions/presets, resolved by `skill_directory_name()`) | `SkillsIntegration` |
 | Fully custom output (companion files, settings merge, etc.) | `IntegrationBase` directly |
 
 Most agents only need `MarkdownIntegration` — a minimal subclass with zero method overrides.
@@ -207,12 +207,12 @@ The base classes handle most work automatically. Override only when the agent de
 |---|---|---|
 | `command_filename(template_name)` | Custom file naming or extension | Copilot → `speckit.{name}.agent.md` |
 | `options()` | Integration-specific CLI flags via `--integration-options` | Codex → `--skills` flag, Copilot → `--skills` flag |
-| `setup()` | Custom install logic (companion files, settings merge) | Copilot → `.agent.md` + `.prompt.md` + `.vscode/settings.json` (default) or `speckit-<name>/SKILL.md` (skills mode) |
+| `setup()` | Custom install logic (companion files, settings merge) | Copilot → `.agent.md` + `.prompt.md` + `.vscode/settings.json` (default) or resolved skills directories under `.github/skills/` (skills mode) |
 | `teardown()` | Custom uninstall logic | Rarely needed; base handles manifest-tracked files |
 
 **Example — Copilot (fully custom `setup`):**
 
-Copilot extends `IntegrationBase` directly because it creates `.agent.md` commands, companion `.prompt.md` files, and merges `.vscode/settings.json`. It also supports a `--skills` mode that scaffolds `speckit-<name>/SKILL.md` under `.github/skills/` using composition with an internal `_CopilotSkillsHelper`. See `src/specify_cli/integrations/copilot/__init__.py` for the full implementation.
+Copilot extends `IntegrationBase` directly because it creates `.agent.md` commands, companion `.prompt.md` files, and merges `.vscode/settings.json`. It also supports a `--skills` mode that scaffolds agent skills under `.github/skills/` using the resolved directory name (`sp-<name>` for built-ins, `speckit-<name>` for extensions/presets) through an internal `_CopilotSkillsHelper`. See `src/specify_cli/integrations/copilot/__init__.py` for the full implementation.
 
 ### 7. Update Devcontainer files (Optional)
 
@@ -270,7 +270,7 @@ Command content with {SCRIPT} and $ARGUMENTS placeholders.
 ```markdown
 ---
 description: "Command description"
-mode: speckit.command-name
+mode: sp.command-name
 ---
 
 Command content with {SCRIPT} and $ARGUMENTS placeholders.
@@ -335,11 +335,11 @@ Implementation: Extends `IntegrationBase` with custom `setup()` method that:
 
 **Skills mode (`--skills`):** Copilot also supports an alternative skills-based layout
 via `--integration-options="--skills"`. When enabled:
-- Commands are scaffolded as `speckit-<name>/SKILL.md` under `.github/skills/`
+- Commands are scaffolded under `.github/skills/` using the resolved skills directory name (`sp-<name>` for built-ins, `speckit-<name>` for extensions/presets)
 - No companion `.prompt.md` files are generated
 - No `.vscode/settings.json` merge
-- `post_process_skill_content()` injects a `mode: speckit.<stem>` frontmatter field
-- `build_command_invocation()` returns `/speckit-<stem>` instead of bare args
+- `post_process_skill_content()` injects a `mode: sp.<stem>` frontmatter field for built-ins
+- `build_command_invocation()` returns `/sp-<stem>` for built-ins instead of bare args
 
 The two modes are mutually exclusive — a project uses one or the other:
 
@@ -347,7 +347,7 @@ The two modes are mutually exclusive — a project uses one or the other:
 # Default mode: .agent.md agents + .prompt.md companions + settings merge
 specify init my-project --integration copilot
 
-# Skills mode: speckit-<name>/SKILL.md under .github/skills/
+# Skills mode: resolved skill directories under .github/skills/
 specify init my-project --integration copilot --integration-options="--skills"
 ```
 
@@ -386,6 +386,16 @@ Implementation: Extends `YamlIntegration` (parallel to `TomlIntegration`):
 3. **Incorrect `requires_cli` value**: Set to `True` only for agents that have a CLI tool; set to `False` for IDE-based agents.
 4. **Wrong argument format**: Use `$ARGUMENTS` for Markdown agents, `{{args}}` for TOML agents.
 5. **Skipping registration**: The import and `_register()` call in `_register_builtins()` must both be added.
+
+## SP Memory and Command Naming Rules
+
+When editing memory templates (`templates/project/.specify/memory/*.md`), feature scaffolds (`templates/project/.specify/templates/feature/**`), or command bodies (`templates/commands/*.md`), apply the following rule consistently:
+
+- `sp.<command>` literals are workflow concept names. Keep them as-is in titles, layer lists, exclusion clauses ("`sp.implement` is not part of the current phase"), phase boundary statements ("workflow ends at `sp.analyze`"), command duty descriptions ("`sp.gate` refreshes project-level verdict visibility"), and time anchors (`before sp.<command>`, `after sp.<command>`, `during sp.<command>`).
+- `__SPECKIT_COMMAND_<COMMAND>__` placeholders are executable entry points. Use them only when the sentence asks the reader or the model to run the next command, such as `Suggest __SPECKIT_COMMAND_PLAN__`, "run `__SPECKIT_COMMAND_SPECIFY__` first", handoff `agent` fields in YAML frontmatter, and owner / action columns the model would interpret as a slash command to invoke.
+- The placeholder renders host-specifically: `/sp.<command>` for dot hosts (Copilot, Cursor, etc.) and `/sp-<command>` for skills hosts (Codex, Claude, Kimi, etc.). Inserting a slash entry into a concept sentence — for example, rendering `before sp.gate` as `before /sp-gate` — is wrong, because it forces concept text into call syntax.
+- Default to keeping the `sp.<command>` literal when in doubt. Only switch to the placeholder when the sentence is unambiguously an "execute next" hint.
+- For built-in skills directories the layout is `sp-<command>/SKILL.md`. Extension and preset commands keep `speckit-<extension>-<command>/SKILL.md`. The actual on-disk name is resolved by `skill_directory_name()` — do not hard-code either prefix in tests or new integrations.
 
 ---
 

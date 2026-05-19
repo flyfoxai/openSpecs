@@ -227,8 +227,8 @@ class TestIntegrationInstall:
         assert data["integration_settings"]["claude"]["invoke_separator"] == "-"
         assert data["integration_settings"]["codex"]["invoke_separator"] == "-"
 
-        assert (project / ".claude" / "skills" / "speckit-plan" / "SKILL.md").exists()
-        assert (project / ".agents" / "skills" / "speckit-plan" / "SKILL.md").exists()
+        assert (project / ".claude" / "skills" / "sp-plan" / "SKILL.md").exists()
+        assert (project / ".agents" / "skills" / "sp-plan" / "SKILL.md").exists()
 
     def test_install_additional_preserves_shared_manifest(self, tmp_path):
         project = _init_project(tmp_path, "claude")
@@ -337,7 +337,7 @@ class TestIntegrationInstall:
         assert (project / ".specify" / "integrations" / "claude.manifest.json").exists()
 
         # Claude uses skills directory (not commands)
-        assert (project / ".claude" / "skills" / "speckit-plan" / "SKILL.md").exists()
+        assert (project / ".claude" / "skills" / "sp-plan" / "SKILL.md").exists()
 
     def test_install_bare_project_gets_shared_infra(self, tmp_path):
         """Installing into a bare project should create shared scripts and templates."""
@@ -390,7 +390,7 @@ class TestIntegrationUninstall:
     def test_uninstall_removes_files(self, tmp_path):
         project = _init_project(tmp_path, "claude")
         # Claude uses skills directory
-        assert (project / ".claude" / "skills" / "speckit-plan" / "SKILL.md").exists()
+        assert (project / ".claude" / "skills" / "sp-plan" / "SKILL.md").exists()
         assert (project / ".specify" / "integrations" / "claude.manifest.json").exists()
 
         old_cwd = os.getcwd()
@@ -403,7 +403,7 @@ class TestIntegrationUninstall:
         assert "uninstalled" in result.output
 
         # Command files removed
-        assert not (project / ".claude" / "skills" / "speckit-plan" / "SKILL.md").exists()
+        assert not (project / ".claude" / "skills" / "sp-plan" / "SKILL.md").exists()
 
         # Manifest removed
         assert not (project / ".specify" / "integrations" / "claude.manifest.json").exists()
@@ -414,7 +414,7 @@ class TestIntegrationUninstall:
     def test_uninstall_preserves_modified_files(self, tmp_path):
         """Full lifecycle: install → modify → uninstall → modified file kept."""
         project = _init_project(tmp_path, "claude")
-        plan_file = project / ".claude" / "skills" / "speckit-plan" / "SKILL.md"
+        plan_file = project / ".claude" / "skills" / "sp-plan" / "SKILL.md"
         assert plan_file.exists()
 
         # Modify a file
@@ -428,7 +428,7 @@ class TestIntegrationUninstall:
             os.chdir(old_cwd)
         assert result.exit_code == 0
         assert "preserved" in result.output
-        assert ".claude/skills/speckit-plan/SKILL.md" in result.output
+        assert ".claude/skills/sp-plan/SKILL.md" in result.output
 
         # Modified file kept
         assert plan_file.exists()
@@ -476,8 +476,8 @@ class TestIntegrationUninstall:
         finally:
             os.chdir(old_cwd)
         assert result.exit_code == 0, result.output
-        assert not (project / ".agents" / "skills" / "speckit-plan" / "SKILL.md").exists()
-        assert (project / ".claude" / "skills" / "speckit-plan" / "SKILL.md").exists()
+        assert not (project / ".agents" / "skills" / "sp-plan" / "SKILL.md").exists()
+        assert (project / ".claude" / "skills" / "sp-plan" / "SKILL.md").exists()
 
         data = json.loads((project / ".specify" / "integration.json").read_text(encoding="utf-8"))
         assert data["integration"] == "claude"
@@ -486,7 +486,7 @@ class TestIntegrationUninstall:
     def test_uninstall_default_refreshes_templates_for_fallback(self, tmp_path):
         project = _init_project(tmp_path, "gemini")
         template = project / ".specify" / "templates" / "plan-template.md"
-        assert "/speckit.plan" in template.read_text(encoding="utf-8")
+        assert "/sp.plan" in template.read_text(encoding="utf-8")
 
         old_cwd = os.getcwd()
         try:
@@ -504,7 +504,7 @@ class TestIntegrationUninstall:
 
         data = json.loads((project / ".specify" / "integration.json").read_text(encoding="utf-8"))
         assert data["integration"] == "claude"
-        assert "/speckit-plan" in template.read_text(encoding="utf-8")
+        assert "/sp-plan" in template.read_text(encoding="utf-8")
 
     def test_uninstall_preserves_shared_infra(self, tmp_path):
         """Shared scripts and templates are not removed by integration uninstall."""
@@ -565,7 +565,7 @@ class TestIntegrationUse:
     def test_use_refreshes_shared_templates_between_command_styles(self, tmp_path):
         project = _init_project(tmp_path, "claude")
         template = project / ".specify" / "templates" / "plan-template.md"
-        assert "/speckit-plan" in template.read_text(encoding="utf-8")
+        assert "/sp-plan" in template.read_text(encoding="utf-8")
 
         old_cwd = os.getcwd()
         try:
@@ -578,18 +578,18 @@ class TestIntegrationUse:
 
             use_gemini = runner.invoke(app, ["integration", "use", "gemini"], catch_exceptions=False)
             assert use_gemini.exit_code == 0, use_gemini.output
-            assert "/speckit.plan" in template.read_text(encoding="utf-8")
+            assert "/sp.plan" in template.read_text(encoding="utf-8")
 
             use_claude = runner.invoke(app, ["integration", "use", "claude"], catch_exceptions=False)
             assert use_claude.exit_code == 0, use_claude.output
-            assert "/speckit-plan" in template.read_text(encoding="utf-8")
+            assert "/sp-plan" in template.read_text(encoding="utf-8")
         finally:
             os.chdir(old_cwd)
 
     def test_use_preserves_modified_templates_unless_forced(self, tmp_path):
         project = _init_project(tmp_path, "claude")
         template = project / ".specify" / "templates" / "plan-template.md"
-        template.write_text("custom template with /speckit-plan\n", encoding="utf-8")
+        template.write_text("custom template with /sp-plan\n", encoding="utf-8")
 
         old_cwd = os.getcwd()
         try:
@@ -602,7 +602,7 @@ class TestIntegrationUse:
 
             use_gemini = runner.invoke(app, ["integration", "use", "gemini"], catch_exceptions=False)
             assert use_gemini.exit_code == 0, use_gemini.output
-            assert template.read_text(encoding="utf-8") == "custom template with /speckit-plan\n"
+            assert template.read_text(encoding="utf-8") == "custom template with /sp-plan\n"
 
             force_use = runner.invoke(app, [
                 "integration", "use", "gemini",
@@ -613,7 +613,7 @@ class TestIntegrationUse:
             os.chdir(old_cwd)
 
         updated = template.read_text(encoding="utf-8")
-        assert "/speckit.plan" in updated
+        assert "/sp.plan" in updated
         assert "custom template" not in updated
 
     @pytest.mark.skipif(not hasattr(os, "symlink"), reason="symlinks are unavailable")
@@ -722,7 +722,7 @@ class TestIntegrationSwitch:
             os.chdir(old_cwd)
         assert result.exit_code == 0, result.output
         assert "managed shared templates refreshed" in result.output
-        assert "/speckit-plan" in template.read_text(encoding="utf-8")
+        assert "/sp-plan" in template.read_text(encoding="utf-8")
 
     def test_switch_installed_target_rejects_integration_options(self, tmp_path):
         project = _init_project(tmp_path, "claude")
@@ -750,7 +750,7 @@ class TestIntegrationSwitch:
     def test_switch_between_integrations(self, tmp_path):
         project = _init_project(tmp_path, "claude")
         # Verify claude files exist (claude uses skills)
-        assert (project / ".claude" / "skills" / "speckit-plan" / "SKILL.md").exists()
+        assert (project / ".claude" / "skills" / "sp-plan" / "SKILL.md").exists()
 
         old_cwd = os.getcwd()
         try:
@@ -765,10 +765,10 @@ class TestIntegrationSwitch:
         assert "Switched to" in result.output
 
         # Old claude files removed
-        assert not (project / ".claude" / "skills" / "speckit-plan" / "SKILL.md").exists()
+        assert not (project / ".claude" / "skills" / "sp-plan" / "SKILL.md").exists()
 
         # New copilot files created
-        assert (project / ".github" / "agents" / "speckit.plan.agent.md").exists()
+        assert (project / ".github" / "agents" / "sp.plan.agent.md").exists()
 
         # integration.json updated
         data = json.loads((project / ".specify" / "integration.json").read_text(encoding="utf-8"))
@@ -1126,7 +1126,7 @@ class TestIntegrationSwitch:
         assert opts["ai"] == "codex"
 
         template = project / ".specify" / "templates" / "plan-template.md"
-        assert "/speckit-plan" in template.read_text(encoding="utf-8")
+        assert "/sp-plan" in template.read_text(encoding="utf-8")
 
 
 class TestIntegrationUpgrade:
@@ -1175,7 +1175,7 @@ class TestIntegrationUpgrade:
     def test_upgrade_non_default_keeps_default_template_invocations(self, tmp_path):
         project = _init_project(tmp_path, "gemini")
         template = project / ".specify" / "templates" / "plan-template.md"
-        assert "/speckit.plan" in template.read_text(encoding="utf-8")
+        assert "/sp.plan" in template.read_text(encoding="utf-8")
 
         old_cwd = os.getcwd()
         try:
@@ -1197,7 +1197,7 @@ class TestIntegrationUpgrade:
 
         data = json.loads((project / ".specify" / "integration.json").read_text(encoding="utf-8"))
         assert data["integration"] == "gemini"
-        assert "/speckit.plan" in template.read_text(encoding="utf-8")
+        assert "/sp.plan" in template.read_text(encoding="utf-8")
 
     def test_upgrade_migrates_opencode_legacy_dir(self, tmp_path):
         """Upgrade moves OpenCode commands from .opencode/command/ to .opencode/commands/."""
@@ -1220,8 +1220,8 @@ class TestIntegrationUpgrade:
         manifest_data["files"] = patched_files
         manifest_path.write_text(json.dumps(manifest_data), encoding="utf-8")
 
-        old_commands = sorted(legacy.glob("speckit.*.md"))
-        assert len(old_commands) > 0, "Legacy dir should have speckit command files"
+        old_commands = sorted(legacy.glob("sp.*.md"))
+        assert len(old_commands) > 0, "Legacy dir should have sp command files"
 
         result = _run_in_project(project, [
             "integration", "upgrade", "opencode",
@@ -1232,13 +1232,13 @@ class TestIntegrationUpgrade:
 
         # New commands in canonical dir
         assert canonical.is_dir(), ".opencode/commands/ should exist after upgrade"
-        new_commands = sorted(canonical.glob("speckit.*.md"))
+        new_commands = sorted(canonical.glob("sp.*.md"))
         assert len(new_commands) > 0, "Commands should exist in .opencode/commands/"
 
         # Stale files removed from legacy dir
-        remaining = list(legacy.glob("speckit.*.md"))
+        remaining = list(legacy.glob("sp.*.md"))
         assert len(remaining) == 0, (
-            f"Legacy .opencode/command/ should have no speckit files after upgrade, "
+            f"Legacy .opencode/command/ should have no sp files after upgrade, "
             f"found: {[f.name for f in remaining]}"
         )
 
@@ -1266,7 +1266,7 @@ class TestIntegrationLifecycle:
             assert "installed successfully" in result.output
 
             # Claude uses skills directory
-            plan_file = project / ".claude" / "skills" / "speckit-plan" / "SKILL.md"
+            plan_file = project / ".claude" / "skills" / "sp-plan" / "SKILL.md"
             assert plan_file.exists()
 
             # Modify one file

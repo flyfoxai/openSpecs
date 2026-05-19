@@ -1,7 +1,10 @@
 """
 Mistral Vibe CLI integration — skills-based agent.
 
-Vibe uses ``.vibe/skills/speckit-<name>/SKILL.md`` layout (enforced since v2.0.0).
+Vibe installs skills under ``.vibe/skills/`` (enforced since v2.0.0).
+The directory name is resolved by ``skill_directory_name()``: built-in
+commands use ``sp-<name>/SKILL.md`` and extension/preset commands use
+``speckit-<extension>-<name>/SKILL.md``.
 """
 
 from __future__ import annotations

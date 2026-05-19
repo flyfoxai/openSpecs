@@ -8,6 +8,8 @@ from specify_cli.integrations import get_integration
 from specify_cli.integrations.base import MarkdownIntegration
 from specify_cli.integrations.manifest import IntegrationManifest
 
+from .sp_expected import command_files, project_scaffold_files
+
 
 class TestGenericIntegration:
     """Tests for GenericIntegration — requires --commands-dir option."""
@@ -85,7 +87,7 @@ class TestGenericIntegration:
         cmd_files = [f for f in created if "scripts" not in f.parts]
         assert len(cmd_files) > 0
         for f in cmd_files:
-            assert f.name.startswith("speckit.")
+            assert f.name.startswith("sp.")
             assert f.name.endswith(".md")
 
     def test_templates_are_processed(self, tmp_path):
@@ -177,7 +179,7 @@ class TestGenericIntegration:
         i = get_integration("generic")
         m = IntegrationManifest("generic", tmp_path)
         i.setup(tmp_path, m, parsed_options={"commands_dir": ".custom/cmds"})
-        plan_file = tmp_path / ".custom" / "cmds" / "speckit.plan.md"
+        plan_file = tmp_path / ".custom" / "cmds" / "sp.plan.md"
         assert plan_file.exists()
         content = plan_file.read_text(encoding="utf-8")
         assert i.context_file in content, (
@@ -190,7 +192,7 @@ class TestGenericIntegration:
         i = get_integration("generic")
         m = IntegrationManifest("generic", tmp_path)
         i.setup(tmp_path, m, parsed_options={"commands_dir": ".custom/cmds"})
-        implement_file = tmp_path / ".custom" / "cmds" / "speckit.implement.md"
+        implement_file = tmp_path / ".custom" / "cmds" / "sp.implement.md"
         assert implement_file.exists()
         content = implement_file.read_text(encoding="utf-8")
         assert ".specify/memory/constitution.md" in content
@@ -256,20 +258,11 @@ class TestGenericIntegration:
         )
         expected = sorted([
             "AGENTS.md",
-            ".myagent/commands/speckit.analyze.md",
-            ".myagent/commands/speckit.checklist.md",
-            ".myagent/commands/speckit.clarify.md",
-            ".myagent/commands/speckit.constitution.md",
-            ".myagent/commands/speckit.implement.md",
-            ".myagent/commands/speckit.plan.md",
-            ".myagent/commands/speckit.specify.md",
-            ".myagent/commands/speckit.tasks.md",
-            ".myagent/commands/speckit.taskstoissues.md",
+            *command_files(".myagent/commands", ".md"),
             ".specify/init-options.json",
             ".specify/integration.json",
             ".specify/integrations/generic.manifest.json",
             ".specify/integrations/speckit.manifest.json",
-            ".specify/memory/constitution.md",
             ".specify/scripts/bash/check-prerequisites.sh",
             ".specify/scripts/bash/common.sh",
             ".specify/scripts/bash/create-new-feature.sh",
@@ -282,6 +275,7 @@ class TestGenericIntegration:
             ".specify/templates/tasks-template.md",
             ".specify/workflows/speckit/workflow.yml",
             ".specify/workflows/workflow-registry.json",
+            *project_scaffold_files(),
         ])
         assert actual == expected, (
             f"Missing: {sorted(set(expected) - set(actual))}\n"
@@ -312,20 +306,11 @@ class TestGenericIntegration:
         )
         expected = sorted([
             "AGENTS.md",
-            ".myagent/commands/speckit.analyze.md",
-            ".myagent/commands/speckit.checklist.md",
-            ".myagent/commands/speckit.clarify.md",
-            ".myagent/commands/speckit.constitution.md",
-            ".myagent/commands/speckit.implement.md",
-            ".myagent/commands/speckit.plan.md",
-            ".myagent/commands/speckit.specify.md",
-            ".myagent/commands/speckit.tasks.md",
-            ".myagent/commands/speckit.taskstoissues.md",
+            *command_files(".myagent/commands", ".md"),
             ".specify/init-options.json",
             ".specify/integration.json",
             ".specify/integrations/generic.manifest.json",
             ".specify/integrations/speckit.manifest.json",
-            ".specify/memory/constitution.md",
             ".specify/scripts/powershell/check-prerequisites.ps1",
             ".specify/scripts/powershell/common.ps1",
             ".specify/scripts/powershell/create-new-feature.ps1",
@@ -338,6 +323,7 @@ class TestGenericIntegration:
             ".specify/templates/tasks-template.md",
             ".specify/workflows/speckit/workflow.yml",
             ".specify/workflows/workflow-registry.json",
+            *project_scaffold_files(),
         ])
         assert actual == expected, (
             f"Missing: {sorted(set(expected) - set(actual))}\n"

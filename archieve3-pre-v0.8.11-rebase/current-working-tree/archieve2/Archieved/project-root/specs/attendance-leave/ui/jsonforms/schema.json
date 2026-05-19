@@ -1,0 +1,31 @@
+{
+  "type": "object",
+  "required": ["leaveType", "startAt", "endAt", "reason"],
+  "properties": {
+    "leaveType": {
+      "type": "string",
+      "enum": ["annual", "sick", "personal"],
+      "description": "请假类型"
+    },
+    "startAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "开始时间"
+    },
+    "endAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "结束时间"
+    },
+    "halfDay": {
+      "type": "boolean",
+      "description": "是否半天请假"
+    },
+    "reason": {
+      "type": "string",
+      "minLength": 5,
+      "maxLength": 500,
+      "description": "请假原因"
+    }
+  }
+}

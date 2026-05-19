@@ -83,12 +83,14 @@ You **MUST** consider the user input before proceeding (if not empty).
      - Automatically proceed to step 3
 
 3. Load and analyze the implementation context:
+   - **IF EXISTS**: Read `.specify/memory/project-index.md` for project routing and stable context pointers
+   - **IF EXISTS**: Read `.specify/memory/active-context.md` for the current active feature and smallest useful read set
+   - **IF EXISTS**: Read `.specify/memory/constitution.md` for governance constraints
    - **REQUIRED**: Read tasks.md for the complete task list and execution plan
    - **REQUIRED**: Read plan.md for tech stack, architecture, and file structure
    - **IF EXISTS**: Read data-model.md for entities and relationships
    - **IF EXISTS**: Read contracts/ for API specifications and test requirements
    - **IF EXISTS**: Read research.md for technical decisions and constraints
-   - **IF EXISTS**: Read /memory/constitution.md for governance constraints
    - **IF EXISTS**: Read quickstart.md for integration scenarios
 
 4. **Project Setup Verification**:

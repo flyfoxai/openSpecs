@@ -1,8 +1,10 @@
 """Lingma IDE integration. — skills-based agent.
 
-Lingma IDE uses ``.lingma/skills/speckit-<name>/SKILL.md`` layout.
-In Specify CLI, the Lingma integration is skills-only, and ``--skills``
-defaults to ``True``.
+Lingma IDE installs skills under ``.lingma/skills/``. The directory
+name is resolved by ``skill_directory_name()``: built-in commands use
+``sp-<name>/SKILL.md`` and extension/preset commands use
+``speckit-<extension>-<name>/SKILL.md``. In Specify CLI, the Lingma
+integration is skills-only, and ``--skills`` defaults to ``True``.
 """
 
 from __future__ import annotations

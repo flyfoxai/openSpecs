@@ -61,7 +61,7 @@ class TestIntegrationBase:
         assert len(created) > 0
         for f in created:
             assert f.parent == tmp_path / ".stub" / "commands"
-            assert f.name.startswith("speckit.")
+            assert f.name.startswith("sp.")
             assert f.name.endswith(".md")
 
     def test_setup_copies_templates(self, tmp_path, monkeypatch):
@@ -77,8 +77,8 @@ class TestIntegrationBase:
         project.mkdir()
         created = i.setup(project, IntegrationManifest("stub", project))
         assert len(created) == 2
-        assert (project / ".stub" / "commands" / "speckit.plan.md").exists()
-        assert (project / ".stub" / "commands" / "speckit.specify.md").exists()
+        assert (project / ".stub" / "commands" / "sp.plan.md").exists()
+        assert (project / ".stub" / "commands" / "sp.specify.md").exists()
 
     def test_install_delegates_to_setup(self, tmp_path):
         i = StubIntegration()
@@ -123,7 +123,7 @@ class TestBasePrimitives:
 
     def test_command_filename_default(self):
         i = StubIntegration()
-        assert i.command_filename("plan") == "speckit.plan.md"
+        assert i.command_filename("plan") == "sp.plan.md"
 
     def test_commands_dest(self, tmp_path):
         i = StubIntegration()
@@ -140,8 +140,8 @@ class TestBasePrimitives:
         src = tmp_path / "source.md"
         src.write_text("content", encoding="utf-8")
         dest_dir = tmp_path / "output"
-        result = IntegrationBase.copy_command_to_directory(src, dest_dir, "speckit.plan.md")
-        assert result == dest_dir / "speckit.plan.md"
+        result = IntegrationBase.copy_command_to_directory(src, dest_dir, "sp.plan.md")
+        assert result == dest_dir / "sp.plan.md"
         assert result.read_text(encoding="utf-8") == "content"
 
     def test_record_file_in_manifest(self, tmp_path):
@@ -166,7 +166,7 @@ class TestBasePrimitives:
         assert len(created) > 0
         for f in created:
             assert f.parent.name == "commands"
-            assert f.name.startswith("speckit.")
+            assert f.name.startswith("sp.")
             assert f.name.endswith(".md")
 
 
@@ -175,15 +175,15 @@ class TestBuildCommandInvocation:
 
     def test_base_core_command_dotted(self):
         i = StubIntegration()
-        assert i.build_command_invocation("speckit.plan") == "/speckit.plan"
+        assert i.build_command_invocation("speckit.plan") == "/sp.plan"
 
     def test_base_core_command_bare(self):
         i = StubIntegration()
-        assert i.build_command_invocation("plan") == "/speckit.plan"
+        assert i.build_command_invocation("plan") == "/sp.plan"
 
     def test_base_core_command_with_args(self):
         i = StubIntegration()
-        assert i.build_command_invocation("plan", "my feature") == "/speckit.plan my feature"
+        assert i.build_command_invocation("plan", "my feature") == "/sp.plan my feature"
 
     def test_base_extension_command(self):
         i = StubIntegration()
@@ -196,8 +196,8 @@ class TestBuildCommandInvocation:
     def test_skills_core_command(self):
         from specify_cli.integrations import get_integration
         i = get_integration("codex")
-        assert i.build_command_invocation("speckit.plan") == "/speckit-plan"
-        assert i.build_command_invocation("plan") == "/speckit-plan"
+        assert i.build_command_invocation("speckit.plan") == "/sp-plan"
+        assert i.build_command_invocation("plan") == "/sp-plan"
 
     def test_skills_extension_command(self):
         from specify_cli.integrations import get_integration
@@ -217,17 +217,17 @@ class TestResolveCommandRefs:
     def test_dot_separator_core_command(self):
         text = "Run `__SPECKIT_COMMAND_PLAN__` to plan."
         result = IntegrationBase.resolve_command_refs(text, ".")
-        assert result == "Run `/speckit.plan` to plan."
+        assert result == "Run `/sp.plan` to plan."
 
     def test_hyphen_separator_core_command(self):
         text = "Run `__SPECKIT_COMMAND_PLAN__` to plan."
         result = IntegrationBase.resolve_command_refs(text, "-")
-        assert result == "Run `/speckit-plan` to plan."
+        assert result == "Run `/sp-plan` to plan."
 
     def test_multiple_placeholders(self):
         text = "__SPECKIT_COMMAND_SPECIFY__ then __SPECKIT_COMMAND_PLAN__ then __SPECKIT_COMMAND_TASKS__"
         result = IntegrationBase.resolve_command_refs(text, ".")
-        assert result == "/speckit.specify then /speckit.plan then /speckit.tasks"
+        assert result == "/sp.specify then /sp.plan then /sp.tasks"
 
     def test_extension_command_dot(self):
         text = "Run __SPECKIT_COMMAND_GIT_COMMIT__ to commit."
@@ -245,7 +245,7 @@ class TestResolveCommandRefs:
 
     def test_default_separator_is_dot(self):
         text = "__SPECKIT_COMMAND_PLAN__"
-        assert IntegrationBase.resolve_command_refs(text) == "/speckit.plan"
+        assert IntegrationBase.resolve_command_refs(text) == "/sp.plan"
 
     def test_invoke_separator_class_attribute(self):
         assert IntegrationBase.invoke_separator == "."
@@ -263,7 +263,7 @@ class TestResolveCommandRefs:
         result = IntegrationBase.process_template(
             content, "test-agent", "sh", invoke_separator="."
         )
-        assert "/speckit.plan" in result
+        assert "/sp.plan" in result
         assert "__SPECKIT_COMMAND_" not in result
 
     def test_process_template_skills_separator(self):
@@ -271,7 +271,7 @@ class TestResolveCommandRefs:
         result = IntegrationBase.process_template(
             content, "test-agent", "sh", invoke_separator="-"
         )
-        assert "/speckit-plan" in result
+        assert "/sp-plan" in result
         assert "__SPECKIT_COMMAND_" not in result
 
     def test_unclosed_placeholder_unchanged(self):
@@ -289,7 +289,7 @@ class TestResolveCommandRefs:
     def test_placeholder_adjacent_to_text(self):
         text = "foo__SPECKIT_COMMAND_PLAN__bar"
         result = IntegrationBase.resolve_command_refs(text, ".")
-        assert result == "foo/speckit.planbar"
+        assert result == "foo/sp.planbar"
 
     def test_placeholder_with_digits(self):
         text = "__SPECKIT_COMMAND_V2_PLAN__"

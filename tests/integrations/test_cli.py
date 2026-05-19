@@ -58,8 +58,8 @@ class TestInitIntegrationFlag:
         finally:
             os.chdir(old_cwd)
         assert result.exit_code == 0, f"init failed: {result.output}"
-        assert (project / ".github" / "agents" / "speckit.plan.agent.md").exists()
-        assert (project / ".github" / "prompts" / "speckit.plan.prompt.md").exists()
+        assert (project / ".github" / "agents" / "sp.plan.agent.md").exists()
+        assert (project / ".github" / "prompts" / "sp.plan.prompt.md").exists()
         assert (project / ".specify" / "scripts" / "bash" / "common.sh").exists()
 
         data = json.loads((project / ".specify" / "integration.json").read_text(encoding="utf-8"))
@@ -99,7 +99,7 @@ class TestInitIntegrationFlag:
 
         assert result.exit_code == 0, result.output
         assert f"defaulting to '{specify_cli.DEFAULT_INIT_INTEGRATION}'" in result.output
-        assert (project / ".github" / "agents" / "speckit.plan.agent.md").exists()
+        assert (project / ".github" / "agents" / "sp.plan.agent.md").exists()
 
         data = json.loads((project / ".specify" / "integration.json").read_text(encoding="utf-8"))
         assert data["integration"] == specify_cli.DEFAULT_INIT_INTEGRATION
@@ -119,7 +119,7 @@ class TestInitIntegrationFlag:
         finally:
             os.chdir(old_cwd)
         assert result.exit_code == 0
-        assert (project / ".github" / "agents" / "speckit.plan.agent.md").exists()
+        assert (project / ".github" / "agents" / "sp.plan.agent.md").exists()
 
     def test_ai_emits_deprecation_warning_with_integration_replacement(self, tmp_path):
         from typer.testing import CliRunner
@@ -146,7 +146,7 @@ class TestInitIntegrationFlag:
         assert "0.10.0" in normalized_output
         assert "--integration copilot" in normalized_output
         assert normalized_output.index("Deprecation Warning") < normalized_output.index("Next Steps")
-        assert (project / ".github" / "agents" / "speckit.plan.agent.md").exists()
+        assert (project / ".github" / "agents" / "sp.plan.agent.md").exists()
 
     def test_ai_generic_warning_suggests_integration_options_equivalent(self, tmp_path):
         from typer.testing import CliRunner
@@ -172,7 +172,7 @@ class TestInitIntegrationFlag:
         assert "--integration-options" in normalized_output
         assert ".myagent/commands" in normalized_output
         assert normalized_output.index("Deprecation Warning") < normalized_output.index("Next Steps")
-        assert (project / ".myagent" / "commands" / "speckit.plan.md").exists()
+        assert (project / ".myagent" / "commands" / "sp.plan.md").exists()
 
     def test_ai_claude_here_preserves_preexisting_commands(self, tmp_path):
         from typer.testing import CliRunner
@@ -182,7 +182,7 @@ class TestInitIntegrationFlag:
         project.mkdir()
         commands_dir = project / ".claude" / "skills"
         commands_dir.mkdir(parents=True)
-        skill_dir = commands_dir / "speckit-specify"
+        skill_dir = commands_dir / "sp-specify"
         skill_dir.mkdir(parents=True)
         command_file = skill_dir / "SKILL.md"
         command_file.write_text("# preexisting command\n", encoding="utf-8")
@@ -201,8 +201,8 @@ class TestInitIntegrationFlag:
         assert command_file.exists()
         # init replaces skills (not additive); verify the file has valid skill content
         assert command_file.exists()
-        assert "speckit-specify" in command_file.read_text(encoding="utf-8")
-        assert (project / ".claude" / "skills" / "speckit-plan" / "SKILL.md").exists()
+        assert "sp-specify" in command_file.read_text(encoding="utf-8")
+        assert (project / ".claude" / "skills" / "sp-plan" / "SKILL.md").exists()
 
     def test_shared_infra_skips_existing_files_without_force(self, tmp_path):
         """Pre-existing shared files are not overwritten without --force."""
@@ -263,6 +263,42 @@ class TestInitIntegrationFlag:
         # Other shared files should also be installed
         assert (scripts_dir / "setup-plan.sh").exists()
         assert (templates_dir / "plan-template.md").exists()
+
+    def test_shared_infra_installs_sp_project_scaffold(self, tmp_path):
+        """SP project scaffold files are installed through shared infrastructure."""
+        from specify_cli import _install_shared_infra
+
+        project = tmp_path / "sp-scaffold-test"
+        project.mkdir()
+
+        _install_shared_infra(project, "sh", force=True)
+
+        expected_files = [
+            ".specify/memory/project-index.md",
+            ".specify/memory/active-context.md",
+            ".specify/templates/feature/memory/index.md",
+            ".specify/templates/feature/flows/index.md",
+            ".specify/templates/feature/ui/index.md",
+            ".specify/templates/feature/delivery/01-prd.md",
+        ]
+        for rel in expected_files:
+            assert (project / rel).exists(), f"Missing scaffold file: {rel}"
+
+        spec_template = project / ".specify" / "templates" / "spec-template.md"
+        plan_template = project / ".specify" / "templates" / "plan-template.md"
+        assert "`__FEATURE_TITLE__` currently enters the workflow" in spec_template.read_text(
+            encoding="utf-8"
+        )
+        assert "sp.tasks" in plan_template.read_text(encoding="utf-8")
+
+        manifest_text = (
+            project
+            / ".specify"
+            / "integrations"
+            / "speckit.manifest.json"
+        ).read_text(encoding="utf-8")
+        assert ".specify/memory/project-index.md" in manifest_text
+        assert ".specify/templates/feature/memory/index.md" in manifest_text
 
     def test_shared_infra_skip_warning_displayed(self, tmp_path, capsys):
         """Console warning is displayed when files are skipped."""
@@ -869,7 +905,7 @@ class TestSharedInfraCommandRefs:
     """Verify _install_shared_infra resolves __SPECKIT_COMMAND_*__ in page templates."""
 
     def test_dot_separator_in_page_templates(self, tmp_path):
-        """Markdown agents get /speckit.<name> in page templates."""
+        """Markdown agents get /sp.<name> for built-ins in page templates."""
         from specify_cli import _install_shared_infra
 
         project = tmp_path / "dot-test"
@@ -882,15 +918,16 @@ class TestSharedInfraCommandRefs:
         assert plan.exists()
         content = plan.read_text(encoding="utf-8")
         assert "__SPECKIT_COMMAND_" not in content, "unresolved placeholder in plan-template.md"
-        assert "/speckit.plan" in content
+        assert "/sp.plan" in content
+        assert "/sp.tasks" in content
 
         checklist = project / ".specify" / "templates" / "checklist-template.md"
         content = checklist.read_text(encoding="utf-8")
         assert "__SPECKIT_COMMAND_" not in content
-        assert "/speckit.checklist" in content
+        assert "/sp.checklist" in content
 
     def test_hyphen_separator_in_page_templates(self, tmp_path):
-        """Skills agents get /speckit-<name> in page templates."""
+        """Skills agents get /sp-<name> for built-ins in page templates."""
         from specify_cli import _install_shared_infra
 
         project = tmp_path / "hyphen-test"
@@ -903,13 +940,14 @@ class TestSharedInfraCommandRefs:
         assert plan.exists()
         content = plan.read_text(encoding="utf-8")
         assert "__SPECKIT_COMMAND_" not in content, "unresolved placeholder in plan-template.md"
-        assert "/speckit-plan" in content
-        assert "/speckit.plan" not in content, "dot-notation leaked into skills page template"
+        assert "/sp-plan" in content
+        assert "/sp-tasks" in content
+        assert "/sp.plan" not in content, "dot-notation leaked into skills page template"
 
         tasks = project / ".specify" / "templates" / "tasks-template.md"
         content = tasks.read_text(encoding="utf-8")
         assert "__SPECKIT_COMMAND_" not in content
-        assert "/speckit-tasks" in content
+        assert "/sp-tasks" in content
 
     def test_full_init_claude_resolves_page_templates(self, tmp_path):
         """Full CLI init with Claude (skills agent) produces hyphen refs in page templates."""
@@ -935,7 +973,7 @@ class TestSharedInfraCommandRefs:
 
         plan = project / ".specify" / "templates" / "plan-template.md"
         content = plan.read_text(encoding="utf-8")
-        assert "/speckit-plan" in content, "Claude (skills) should use /speckit-plan"
+        assert "/sp-plan" in content, "Claude (skills) should use /sp-plan"
         assert "__SPECKIT_COMMAND_" not in content
 
     def test_full_init_copilot_resolves_page_templates(self, tmp_path):
@@ -962,7 +1000,7 @@ class TestSharedInfraCommandRefs:
 
         plan = project / ".specify" / "templates" / "plan-template.md"
         content = plan.read_text(encoding="utf-8")
-        assert "/speckit.plan" in content, "Copilot (markdown) should use /speckit.plan"
+        assert "/sp.plan" in content, "Copilot (markdown) should use /sp.plan"
         assert "__SPECKIT_COMMAND_" not in content
 
     def test_full_init_copilot_skills_resolves_page_templates(self, tmp_path):
@@ -990,8 +1028,8 @@ class TestSharedInfraCommandRefs:
 
         plan = project / ".specify" / "templates" / "plan-template.md"
         content = plan.read_text(encoding="utf-8")
-        assert "/speckit-plan" in content, "Copilot --skills should use /speckit-plan"
-        assert "/speckit.plan" not in content, "dot-notation leaked into Copilot skills page template"
+        assert "/sp-plan" in content, "Copilot --skills should use /sp-plan"
+        assert "/sp.plan" not in content, "dot-notation leaked into Copilot skills page template"
         assert "__SPECKIT_COMMAND_" not in content
 
 

@@ -59,7 +59,7 @@ specify init my-project --integration copilot --branch-numbering timestamp
 
 | Variable          | Description                                                              |
 | ----------------- | ------------------------------------------------------------------------ |
-| `SPECIFY_FEATURE` | Override feature detection for non-Git repositories. Set to the feature directory name (e.g., `001-photo-albums`) to work on a specific feature when not using Git branches. Must be set in the context of the agent prior to using `/speckit.plan` or follow-up commands. |
+| `SPECIFY_FEATURE` | Override feature detection for non-Git repositories. Set to the feature directory name (e.g., `001-photo-albums`) to work on a specific feature when not using Git branches. Must be set in the context of the agent prior to using `/sp.plan` or `/sp-plan` and follow-up commands. |
 
 ## Check Installed Tools
 

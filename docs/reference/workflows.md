@@ -157,7 +157,7 @@ inputs:
 
 steps:
   - id: specify
-    command: speckit.specify
+    command: sp.specify
     integration: "{{ inputs.integration }}"
     input:
       args: "{{ inputs.spec }}"
@@ -169,7 +169,7 @@ steps:
     on_reject: abort
 
   - id: plan
-    command: speckit.plan
+    command: sp.plan
     integration: "{{ inputs.integration }}"
     input:
       args: "{{ inputs.spec }}"
@@ -181,13 +181,13 @@ steps:
     on_reject: abort
 
   - id: tasks
-    command: speckit.tasks
+    command: sp.tasks
     integration: "{{ inputs.integration }}"
     input:
       args: "{{ inputs.spec }}"
 
   - id: implement
-    command: speckit.implement
+    command: sp.implement
     integration: "{{ inputs.integration }}"
     input:
       args: "{{ inputs.spec }}"
@@ -225,7 +225,7 @@ specify workflow run speckit -i spec="Build a kanban board with drag-and-drop ta
 
 | Type         | Purpose                                          |
 | ------------ | ------------------------------------------------ |
-| `command`    | Invoke a Spec Kit command (e.g., `speckit.plan`) |
+| `command`    | Invoke a Spec Kit command (e.g., `sp.plan`; skills hosts render this as `/sp-plan`) |
 | `prompt`     | Send an arbitrary prompt to the AI coding agent  |
 | `shell`      | Execute a shell command and capture output       |
 | `gate`       | Pause for human approval before continuing       |

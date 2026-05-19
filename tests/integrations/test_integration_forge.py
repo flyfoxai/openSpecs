@@ -10,14 +10,14 @@ class TestForgeCommandNameFormatter:
 
     def test_simple_name_without_prefix(self):
         """Test formatting a simple name without 'speckit.' prefix."""
-        assert format_forge_command_name("plan") == "speckit-plan"
-        assert format_forge_command_name("tasks") == "speckit-tasks"
-        assert format_forge_command_name("specify") == "speckit-specify"
+        assert format_forge_command_name("plan") == "sp-plan"
+        assert format_forge_command_name("tasks") == "sp-tasks"
+        assert format_forge_command_name("specify") == "sp-specify"
 
     def test_name_with_speckit_prefix(self):
         """Test formatting a name that already has 'speckit.' prefix."""
-        assert format_forge_command_name("speckit.plan") == "speckit-plan"
-        assert format_forge_command_name("speckit.tasks") == "speckit-tasks"
+        assert format_forge_command_name("speckit.plan") == "sp-plan"
+        assert format_forge_command_name("speckit.tasks") == "sp-tasks"
 
     def test_extension_command_name(self):
         """Test formatting extension command names with dots."""
@@ -40,7 +40,7 @@ class TestForgeCommandNameFormatter:
 
     def test_idempotent_already_hyphenated(self):
         """Test that already-hyphenated names are returned unchanged (idempotent)."""
-        assert format_forge_command_name("speckit-plan") == "speckit-plan"
+        assert format_forge_command_name("sp-plan") == "sp-plan"
         assert format_forge_command_name("speckit-my-extension-example") == "speckit-my-extension-example"
         assert format_forge_command_name("speckit-jira-sync-status") == "speckit-jira-sync-status"
 
@@ -59,7 +59,7 @@ class TestForgeIntegration:
 
     def test_command_filename_md(self):
         forge = get_integration("forge")
-        assert forge.command_filename("plan") == "speckit.plan.md"
+        assert forge.command_filename("plan") == "sp.plan.md"
 
     def test_setup_creates_md_files(self, tmp_path):
         from specify_cli.integrations.forge import ForgeIntegration
@@ -135,9 +135,9 @@ class TestForgeIntegration:
         assert len(expected_commands) > 0, "No command templates found"
 
         # Check generated files match templates
-        command_files = sorted(commands_dir.glob("speckit.*.md"))
+        command_files = sorted(commands_dir.glob("sp.*.md"))
         assert len(command_files) == len(expected_commands)
-        actual_commands = {f.name.removeprefix("speckit.").removesuffix(".md") for f in command_files}
+        actual_commands = {f.name.removeprefix("sp.").removesuffix(".md") for f in command_files}
         assert actual_commands == expected_commands
 
     def test_templates_are_processed(self, tmp_path):
@@ -147,7 +147,7 @@ class TestForgeIntegration:
         m = IntegrationManifest("forge", tmp_path)
         forge.setup(tmp_path, m)
         commands_dir = tmp_path / ".forge" / "commands"
-        for cmd_file in commands_dir.glob("speckit.*.md"):
+        for cmd_file in commands_dir.glob("sp.*.md"):
             content = cmd_file.read_text(encoding="utf-8")
             # Check standard replacements
             assert "{SCRIPT}" not in content, f"{cmd_file.name} has unprocessed {{SCRIPT}}"
@@ -170,7 +170,7 @@ class TestForgeIntegration:
         forge = ForgeIntegration()
         m = IntegrationManifest("forge", tmp_path)
         forge.setup(tmp_path, m)
-        plan_file = tmp_path / ".forge" / "commands" / "speckit.plan.md"
+        plan_file = tmp_path / ".forge" / "commands" / "sp.plan.md"
         assert plan_file.exists()
         content = plan_file.read_text(encoding="utf-8")
         assert forge.context_file in content, (
@@ -188,7 +188,7 @@ class TestForgeIntegration:
         commands_dir = tmp_path / ".forge" / "commands"
 
         registrar = CommandRegistrar()
-        for cmd_file in commands_dir.glob("speckit.*.md"):
+        for cmd_file in commands_dir.glob("sp.*.md"):
             content = cmd_file.read_text(encoding="utf-8")
             frontmatter, _ = registrar.parse_frontmatter(content)
 
@@ -213,7 +213,7 @@ class TestForgeIntegration:
         commands_dir = tmp_path / ".forge" / "commands"
 
         # Check all generated command files
-        for cmd_file in commands_dir.glob("speckit.*.md"):
+        for cmd_file in commands_dir.glob("sp.*.md"):
             content = cmd_file.read_text(encoding="utf-8")
             # $ARGUMENTS should be replaced with {{parameters}}
             assert "$ARGUMENTS" not in content, (
@@ -223,7 +223,7 @@ class TestForgeIntegration:
             # We'll check the checklist file specifically as it has a User Input section
 
         # Verify checklist specifically has {{parameters}} in the User Input section
-        checklist = commands_dir / "speckit.checklist.md"
+        checklist = commands_dir / "sp.checklist.md"
         if checklist.exists():
             content = checklist.read_text(encoding="utf-8")
             assert "{{parameters}}" in content, (
@@ -231,7 +231,7 @@ class TestForgeIntegration:
             )
 
     def test_command_refs_use_hyphen_notation(self, tmp_path):
-        """Verify all generated Forge command files use /speckit-foo, not /speckit.foo."""
+        """Verify generated Forge command files use hyphenated slash commands."""
         import re
         from specify_cli.integrations.forge import ForgeIntegration
         forge = ForgeIntegration()
@@ -241,24 +241,24 @@ class TestForgeIntegration:
 
         files_with_refs = []
         files_with_dot_refs = []
-        for cmd_file in commands_dir.glob("speckit.*.md"):
+        for cmd_file in commands_dir.glob("sp.*.md"):
             content = cmd_file.read_text(encoding="utf-8")
-            if re.search(r"/speckit-[a-z]", content):
+            if re.search(r"/(?:sp|speckit)-[a-z]", content):
                 files_with_refs.append(cmd_file.name)
-            if re.search(r"/speckit\.[a-z]", content):
+            if re.search(r"/(?:sp|speckit)\.[a-z]", content):
                 files_with_dot_refs.append(cmd_file.name)
 
         assert files_with_dot_refs == [], (
             f"Files contain dot-notation command references: {files_with_dot_refs}. "
-            "Forge requires hyphen notation (/speckit-<cmd>) for ZSH compatibility."
+            "Forge requires hyphen notation (/sp-<cmd> or /speckit-<cmd>) for ZSH compatibility."
         )
         assert len(files_with_refs) > 0, (
-            "Expected at least one generated Forge command to contain /speckit-<cmd> reference, "
+            "Expected at least one generated Forge command to contain a hyphenated command reference, "
             "but none were found. Check that __SPECKIT_COMMAND_*__ tokens are being resolved."
         )
 
     def test_name_field_uses_hyphenated_format(self, tmp_path):
-        """Verify that injected name fields use hyphenated format (speckit-plan, not speckit.plan)."""
+        """Verify that injected name fields use hyphenated format (sp-plan, not sp.plan)."""
         from specify_cli.integrations.forge import ForgeIntegration
         from specify_cli.agents import CommandRegistrar
         forge = ForgeIntegration()
@@ -268,7 +268,7 @@ class TestForgeIntegration:
 
         # Check that name fields use hyphenated format
         registrar = CommandRegistrar()
-        for cmd_file in commands_dir.glob("speckit.*.md"):
+        for cmd_file in commands_dir.glob("sp.*.md"):
             content = cmd_file.read_text(encoding="utf-8")
             # Extract the name field from frontmatter using the parser
             frontmatter, _ = registrar.parse_frontmatter(content)
@@ -281,8 +281,8 @@ class TestForgeIntegration:
                 f"{cmd_file.name} has name field with dots: {name_value} "
                 f"(should use hyphens for Forge/ZSH compatibility)"
             )
-            assert name_value.startswith("speckit-"), (
-                f"{cmd_file.name} name field should start with 'speckit-': {name_value}"
+            assert name_value.startswith("sp-"), (
+                f"{cmd_file.name} name field should start with 'sp-': {name_value}"
             )
 
 
@@ -436,7 +436,7 @@ class TestForgeCommandRegistrar:
         )
 
     def test_git_extension_command_uses_hyphen_notation(self, tmp_path):
-        """Verify the git extension's feature command uses /speckit-specify (not /speckit.specify) for Forge."""
+        """Verify the git extension's feature command uses /sp-specify (not /sp.specify) for Forge."""
         from pathlib import Path
         from specify_cli.agents import CommandRegistrar
 
@@ -471,11 +471,11 @@ class TestForgeCommandRegistrar:
         assert forge_cmd.exists(), "Expected Forge command file was not created"
 
         content = forge_cmd.read_text(encoding="utf-8")
-        assert "/speckit-specify" in content, (
-            "Expected '/speckit-specify' (hyphen) in generated Forge git.feature command body, "
+        assert "/sp-specify" in content, (
+            "Expected '/sp-specify' (hyphen) in generated Forge git.feature command body, "
             "but it was not found. Check that __SPECKIT_COMMAND_SPECIFY__ is resolved correctly."
         )
-        assert "/speckit.specify" not in content, (
-            "Found '/speckit.specify' (dot notation) in generated Forge git.feature command body. "
+        assert "/sp.specify" not in content, (
+            "Found '/sp.specify' (dot notation) in generated Forge git.feature command body. "
             "Forge requires hyphen notation for ZSH compatibility."
         )

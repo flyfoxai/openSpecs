@@ -1,8 +1,11 @@
 """Trae IDE integration. — skills-based agent.
 
-Trae IDE uses ``.trae/skills/speckit-<name>/SKILL.md`` layout.
-In the Specify CLI Trae integration, explicit command support was deprecated
-since v0.5.1; ``--skills`` defaults to ``True``.
+Trae IDE installs skills under ``.trae/skills/``. The directory name is
+resolved by ``skill_directory_name()``: built-in commands use
+``sp-<name>/SKILL.md`` and extension/preset commands use
+``speckit-<extension>-<name>/SKILL.md``. In the Specify CLI Trae
+integration, explicit command support was deprecated since v0.5.1;
+``--skills`` defaults to ``True``.
 """
 
 from __future__ import annotations

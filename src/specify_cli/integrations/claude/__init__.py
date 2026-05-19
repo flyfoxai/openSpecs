@@ -9,6 +9,8 @@ import re
 
 import yaml
 
+from specify_cli.command_names import skill_directory_name
+
 from ..base import SkillsIntegration
 from ..manifest import IntegrationManifest
 
@@ -28,10 +30,14 @@ ARGUMENT_HINTS: dict[str, str] = {
     "tasks": "Optional task generation constraints",
     "implement": "Optional implementation guidance or task filter",
     "analyze": "Optional focus areas for analysis",
+    "bundle": "Optional focus or scope for final document bundle checks",
     "clarify": "Optional areas to clarify in the spec",
     "constitution": "Principles or values for the project constitution",
+    "flow": "Optional user journey or business process to model",
+    "gate": "Optional decision gate or readiness focus",
     "checklist": "Domain or focus area for the checklist",
     "taskstoissues": "Optional filter or label for GitHub issues",
+    "ui": "Optional screen, interaction, or JSONForms focus",
 }
 
 
@@ -105,7 +111,7 @@ class ClaudeIntegration(SkillsIntegration):
 
     def _render_skill(self, template_name: str, frontmatter: dict[str, Any], body: str) -> str:
         """Render a processed command template as a Claude skill."""
-        skill_name = f"speckit-{template_name.replace('.', '-')}"
+        skill_name = skill_directory_name(template_name)
         description = frontmatter.get(
             "description",
             f"Spec-kit workflow command: {template_name}",
@@ -224,9 +230,11 @@ class ClaudeIntegration(SkillsIntegration):
             updated = self.post_process_skill_content(content)
 
             # Inject argument-hint if available for this skill
-            skill_dir_name = path.parent.name  # e.g. "speckit-plan"
+            skill_dir_name = path.parent.name  # e.g. "sp-plan" or "speckit-git-feature"
             stem = skill_dir_name
-            if stem.startswith("speckit-"):
+            if stem.startswith("sp-"):
+                stem = stem[len("sp-"):]
+            elif stem.startswith("speckit-"):
                 stem = stem[len("speckit-"):]
             hint = ARGUMENT_HINTS.get(stem, "")
             if hint:

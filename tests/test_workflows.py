@@ -63,12 +63,12 @@ inputs:
 
 steps:
   - id: step-one
-    command: speckit.specify
+    command: sp.specify
     input:
       args: "{{ inputs.spec }}"
 
   - id: step-two
-    command: speckit.plan
+    command: sp.plan
     input:
       args: "{{ steps.step-one.output.command }}"
 """
@@ -445,13 +445,13 @@ class TestCommandStep:
         )
         config = {
             "id": "test",
-            "command": "speckit.specify",
+            "command": "sp.specify",
             "input": {"args": "{{ inputs.name }}"},
         }
         with patch("specify_cli.workflows.steps.command.shutil.which", return_value=None):
             result = step.execute(config, ctx)
         assert result.status == StepStatus.FAILED
-        assert result.output["command"] == "speckit.specify"
+        assert result.output["command"] == "sp.specify"
         assert result.output["integration"] == "claude"
         assert result.output["input"]["args"] == "login"
 
@@ -470,7 +470,7 @@ class TestCommandStep:
         ctx = StepContext(default_integration="claude")
         config = {
             "id": "test",
-            "command": "speckit.plan",
+            "command": "sp.plan",
             "integration": "gemini",
             "input": {},
         }
@@ -485,7 +485,7 @@ class TestCommandStep:
         ctx = StepContext(default_model="sonnet-4")
         config = {
             "id": "test",
-            "command": "speckit.implement",
+            "command": "sp.implement",
             "model": "opus-4",
             "input": {},
         }
@@ -500,7 +500,7 @@ class TestCommandStep:
         ctx = StepContext(default_options={"max-tokens": 8000})
         config = {
             "id": "test",
-            "command": "speckit.plan",
+            "command": "sp.plan",
             "options": {"thinking-budget": 32768},
             "input": {},
         }
@@ -522,7 +522,7 @@ class TestCommandStep:
         )
         config = {
             "id": "test",
-            "command": "speckit.specify",
+            "command": "sp.specify",
             "input": {"args": "{{ inputs.name }}"},
         }
         with patch("specify_cli.workflows.steps.command.shutil.which", return_value=None):
@@ -545,7 +545,7 @@ class TestCommandStep:
         )
         config = {
             "id": "test",
-            "command": "speckit.specify",
+            "command": "sp.specify",
             "input": {"args": "{{ inputs.name }}"},
         }
 
@@ -565,8 +565,8 @@ class TestCommandStep:
         call_args = mock_run.call_args
         assert call_args[0][0][0] == "claude"
         assert call_args[0][0][1] == "-p"
-        # Claude is a SkillsIntegration so uses /speckit-specify
-        assert "/speckit-specify login" in call_args[0][0][2]
+        # Claude is a SkillsIntegration so built-ins use /sp-specify
+        assert "/sp-specify login" in call_args[0][0][2]
 
     def test_dispatch_failure_returns_failed_status(self, tmp_path):
         """When the CLI exits non-zero, the step should fail."""
@@ -582,7 +582,7 @@ class TestCommandStep:
         )
         config = {
             "id": "test",
-            "command": "speckit.specify",
+            "command": "sp.specify",
             "input": {"args": "test"},
         }
 
@@ -785,8 +785,8 @@ class TestIfThenStep:
         config = {
             "id": "check",
             "condition": "{{ inputs.scope == 'full' }}",
-            "then": [{"id": "a", "command": "speckit.tasks"}],
-            "else": [{"id": "b", "command": "speckit.plan"}],
+            "then": [{"id": "a", "command": "sp.tasks"}],
+            "else": [{"id": "b", "command": "sp.plan"}],
         }
         result = step.execute(config, ctx)
         assert result.output["condition_result"] is True
@@ -802,8 +802,8 @@ class TestIfThenStep:
         config = {
             "id": "check",
             "condition": "{{ inputs.scope == 'full' }}",
-            "then": [{"id": "a", "command": "speckit.tasks"}],
-            "else": [{"id": "b", "command": "speckit.plan"}],
+            "then": [{"id": "a", "command": "sp.tasks"}],
+            "else": [{"id": "b", "command": "sp.plan"}],
         }
         result = step.execute(config, ctx)
         assert result.output["condition_result"] is False
@@ -832,7 +832,7 @@ class TestSwitchStep:
             "id": "route",
             "expression": "{{ steps.review.output.choice }}",
             "cases": {
-                "approve": [{"id": "plan", "command": "speckit.plan"}],
+                "approve": [{"id": "plan", "command": "sp.plan"}],
                 "reject": [{"id": "log", "type": "shell", "run": "echo rejected"}],
             },
             "default": [{"id": "abort", "type": "gate", "message": "Unknown"}],
@@ -853,7 +853,7 @@ class TestSwitchStep:
             "id": "route",
             "expression": "{{ steps.review.output.choice }}",
             "cases": {
-                "approve": [{"id": "plan", "command": "speckit.plan"}],
+                "approve": [{"id": "plan", "command": "sp.plan"}],
             },
             "default": [{"id": "fallback", "type": "gate", "message": "Fallback"}],
         }
@@ -873,7 +873,7 @@ class TestSwitchStep:
             "id": "route",
             "expression": "{{ steps.review.output.choice }}",
             "cases": {
-                "approve": [{"id": "plan", "command": "speckit.plan"}],
+                "approve": [{"id": "plan", "command": "sp.plan"}],
             },
         }
         result = step.execute(config, ctx)
@@ -916,7 +916,7 @@ class TestWhileStep:
             "id": "retry",
             "condition": "{{ steps.run-tests.output.exit_code != 0 }}",
             "max_iterations": 5,
-            "steps": [{"id": "fix", "command": "speckit.implement"}],
+            "steps": [{"id": "fix", "command": "sp.implement"}],
         }
         result = step.execute(config, ctx)
         assert result.output["condition_result"] is True
@@ -934,7 +934,7 @@ class TestWhileStep:
             "id": "retry",
             "condition": "{{ steps.run-tests.output.exit_code != 0 }}",
             "max_iterations": 5,
-            "steps": [{"id": "fix", "command": "speckit.implement"}],
+            "steps": [{"id": "fix", "command": "sp.implement"}],
         }
         result = step.execute(config, ctx)
         assert result.output["condition_result"] is False
@@ -969,7 +969,7 @@ class TestDoWhileStep:
             "id": "cycle",
             "condition": "{{ false }}",
             "max_iterations": 3,
-            "steps": [{"id": "refine", "command": "speckit.specify"}],
+            "steps": [{"id": "refine", "command": "sp.specify"}],
         }
         result = step.execute(config, ctx)
         assert len(result.next_steps) == 1
@@ -986,7 +986,7 @@ class TestDoWhileStep:
             "id": "cycle",
             "condition": "{{ true }}",
             "max_iterations": 5,
-            "steps": [{"id": "work", "command": "speckit.plan"}],
+            "steps": [{"id": "work", "command": "sp.plan"}],
         }
         result = step.execute(config, ctx)
         # Body always executes on first call regardless of condition
@@ -1048,7 +1048,7 @@ class TestFanOutStep:
             "id": "parallel",
             "items": "{{ steps.tasks.output.task_list }}",
             "max_concurrency": 3,
-            "step": {"id": "impl", "command": "speckit.implement"},
+            "step": {"id": "impl", "command": "sp.implement"},
         }
         result = step.execute(config, ctx)
         assert result.output["item_count"] == 2
@@ -1063,7 +1063,7 @@ class TestFanOutStep:
         config = {
             "id": "parallel",
             "items": "{{ undefined_var }}",
-            "step": {"id": "impl", "command": "speckit.implement"},
+            "step": {"id": "impl", "command": "sp.implement"},
         }
         result = step.execute(config, ctx)
         assert result.output["item_count"] == 0
@@ -1218,7 +1218,7 @@ workflow:
   version: "1.0.0"
 steps:
   - id: step-one
-    command: speckit.specify
+    command: sp.specify
 """)
         errors = validate_workflow(definition)
         assert any("workflow.id" in e for e in errors)
@@ -1233,7 +1233,7 @@ workflow:
   version: "1.0.0"
 steps:
   - id: step-one
-    command: speckit.specify
+    command: sp.specify
 """)
         errors = validate_workflow(definition)
         assert any("lowercase alphanumeric" in e for e in errors)
@@ -1261,9 +1261,9 @@ workflow:
   version: "1.0.0"
 steps:
   - id: same-id
-    command: speckit.specify
+    command: sp.specify
   - id: same-id
-    command: speckit.plan
+    command: sp.plan
 """)
         errors = validate_workflow(definition)
         assert any("Duplicate" in e for e in errors)
@@ -1297,10 +1297,10 @@ steps:
     condition: "{{ true }}"
     then:
       - id: nested-a
-        command: speckit.specify
+        command: sp.specify
     else:
       - id: nested-b
-        command: speckit.plan
+        command: sp.plan
 """)
         errors = validate_workflow(definition)
         assert errors == []
@@ -1318,7 +1318,7 @@ inputs:
     type: array
 steps:
   - id: step-one
-    command: speckit.specify
+    command: sp.specify
 """)
         errors = validate_workflow(definition)
         assert any("invalid type" in e.lower() for e in errors)
@@ -1368,7 +1368,7 @@ inputs:
     default: "test"
 steps:
   - id: step-one
-    command: speckit.specify
+    command: sp.specify
     input:
       args: "{{ inputs.name }}"
 """
@@ -1379,7 +1379,7 @@ steps:
 
         assert state.status == RunStatus.FAILED
         assert "step-one" in state.step_results
-        assert state.step_results["step-one"]["output"]["command"] == "speckit.specify"
+        assert state.step_results["step-one"]["output"]["command"] == "sp.specify"
         assert state.step_results["step-one"]["output"]["input"]["args"] == "login"
 
     def test_execute_with_gate_pauses(self, project_dir):
@@ -1485,7 +1485,7 @@ inputs:
     required: true
 steps:
   - id: step-one
-    command: speckit.specify
+    command: sp.specify
     input:
       args: "{{ inputs.name }}"
 """
@@ -1774,7 +1774,7 @@ inputs:
 steps:
   - id: specify
     type: shell
-    run: "echo speckit.specify {{ inputs.feature }}"
+    run: "echo sp.specify {{ inputs.feature }}"
 
   - id: check-scope
     type: if
@@ -1790,7 +1790,7 @@ steps:
 
   - id: plan
     type: shell
-    run: "echo speckit.plan"
+    run: "echo sp.plan"
 """
         definition = WorkflowDefinition.from_string(yaml_str)
         engine = WorkflowEngine(project_dir)

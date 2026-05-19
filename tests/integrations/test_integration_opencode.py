@@ -20,7 +20,7 @@ class TestOpencodeIntegration(MarkdownIntegrationTests):
         integration = get_integration(self.KEY)
 
         args = integration.build_exec_args(
-            "/speckit.specify build a login page",
+            "/sp.specify build a login page",
             output_json=False,
         )
 
@@ -28,7 +28,7 @@ class TestOpencodeIntegration(MarkdownIntegrationTests):
             "opencode",
             "run",
             "--command",
-            "speckit.specify",
+            "sp.specify",
             "build a login page",
         ]
         assert "-p" not in args
@@ -38,7 +38,7 @@ class TestOpencodeIntegration(MarkdownIntegrationTests):
         integration = get_integration(self.KEY)
 
         args = integration.build_exec_args(
-            "/speckit.plan add OAuth",
+            "/sp.plan add OAuth",
             model="anthropic/claude-sonnet-4",
             output_json=True,
         )
@@ -47,7 +47,7 @@ class TestOpencodeIntegration(MarkdownIntegrationTests):
             "opencode",
             "run",
             "--command",
-            "speckit.plan",
+            "sp.plan",
             "-m",
             "anthropic/claude-sonnet-4",
             "--format",
@@ -197,4 +197,4 @@ class TestOpencodeIntegration(MarkdownIntegrationTests):
         legacy = tmp_path / ".opencode" / "command"
         assert canonical.is_dir()
         assert not legacy.exists()
-        assert any(canonical.glob("speckit.*.md"))
+        assert any(canonical.glob("sp.*.md"))

@@ -68,6 +68,17 @@ def shared_scripts_source(
     return repo_root / "scripts"
 
 
+def shared_project_source(
+    *,
+    core_pack: Path | None,
+    repo_root: Path,
+) -> Path:
+    """Return the bundled/source generated-project scaffold directory."""
+    if core_pack and (core_pack / "templates" / "project").is_dir():
+        return core_pack / "templates" / "project"
+    return repo_root / "templates" / "project"
+
+
 def _shared_destination_label(project_path: Path, dest: Path) -> str:
     try:
         return dest.relative_to(project_path).as_posix()
@@ -388,6 +399,35 @@ def install_shared_infra(
                 content = src.read_text(encoding="utf-8")
                 content = IntegrationBase.resolve_command_refs(content, invoke_separator)
                 planned_templates.append((dst, rel, content))
+
+    project_src = shared_project_source(core_pack=core_pack, repo_root=repo_root)
+    if project_src.is_dir():
+        for src_path in sorted(project_src.rglob("*")):
+            if not src_path.is_file():
+                continue
+
+            rel_path = src_path.relative_to(project_src)
+            dst_path = project_path / rel_path
+            rel = dst_path.relative_to(project_path).as_posix()
+            if not _safe_dest_or_bucket(dst_path, rel, parent_must_exist=False):
+                continue
+            write, bucket = _decide_overwrite(rel, dst_path)
+            if not write:
+                if bucket == "preserved":
+                    preserved_user_files.append(rel)
+                else:
+                    skipped_files.append(rel)
+                continue
+
+            if not _ensure_or_bucket_dir(dst_path.parent):
+                continue
+
+            if src_path.suffix in {".md", ".mmd", ".json", ".ps1", ".sh"}:
+                content = src_path.read_text(encoding="utf-8")
+                content = IntegrationBase.resolve_command_refs(content, invoke_separator)
+                planned_templates.append((dst_path, rel, content))
+            else:
+                planned_copies.append((dst_path, rel, src_path.read_bytes(), src_path.stat().st_mode & 0o777))
 
     for dst_path, rel, content, mode in planned_copies:
         if not _ensure_or_bucket_dir(dst_path.parent):

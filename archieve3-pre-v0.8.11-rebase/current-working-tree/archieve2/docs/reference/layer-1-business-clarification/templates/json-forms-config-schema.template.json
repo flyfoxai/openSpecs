@@ -1,0 +1,182 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Codex Config Management",
+  "type": "object",
+  "properties": {
+    "searchSettings": {
+      "type": "object",
+      "title": "搜索目录设置",
+      "description": "定义用户级目录、项目总目录和手动加入的项目目录。",
+      "properties": {
+        "userCodexDir": {
+          "type": "string",
+          "title": "userCodexDir",
+          "description": "用户主目录下的 .codex 文件夹路径。"
+        },
+        "workspaceRoots": {
+          "type": "array",
+          "title": "workspaceRoots",
+          "description": "用于扫描子项目的总项目目录列表。",
+          "items": {
+            "type": "string"
+          }
+        },
+        "manualProjects": {
+          "type": "array",
+          "title": "manualProjects",
+          "description": "手动加入集中管理的项目目录。",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "userCodexDir"
+      ]
+    },
+    "configItem": {
+      "type": "object",
+      "title": "具体设置项",
+      "description": "定义某个配置项的值、是否写入以及作用域。",
+      "properties": {
+        "key": {
+          "type": "string",
+          "title": "key",
+          "description": "配置项键名。"
+        },
+        "includeInToml": {
+          "type": "boolean",
+          "title": "includeInToml",
+          "description": "勾选后代表该配置项要写入 TOML。"
+        },
+        "requiredItem": {
+          "type": "boolean",
+          "title": "requiredItem",
+          "description": "是否为业务必选项。必选项默认勾选且不能取消。"
+        },
+        "currentValueType": {
+          "type": "string",
+          "title": "currentValueType",
+          "description": "当前配置值采用哪种输入方式。",
+          "enum": [
+            "boolean",
+            "enum",
+            "text"
+          ]
+        },
+        "boolValue": {
+          "type": "string",
+          "title": "boolValue",
+          "description": "布尔型配置项的当前值。",
+          "enum": [
+            "true",
+            "false"
+          ]
+        },
+        "enumValue": {
+          "type": "string",
+          "title": "enumValue",
+          "description": "枚举型配置项的当前值。",
+          "enum": [
+            "gpt-5.4",
+            "gpt-5.3-codex",
+            "gpt-5.2-codex",
+            "low",
+            "medium",
+            "high",
+            "xhigh"
+          ]
+        },
+        "textValue": {
+          "type": "string",
+          "title": "textValue",
+          "description": "允许自由输入的模型名或其他字符串值。",
+          "minLength": 1
+        },
+        "summary": {
+          "type": "string",
+          "title": "summary",
+          "description": "展示在第二行的小字说明。"
+        },
+        "scopeMode": {
+          "type": "string",
+          "title": "scopeMode",
+          "description": "该配置项是全局生效还是只对指定项目生效。",
+          "enum": [
+            "global",
+            "project"
+          ]
+        },
+        "targetProjects": {
+          "type": "array",
+          "title": "targetProjects",
+          "description": "当 scopeMode 为 project 时，需要指定目标项目。",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "key",
+        "includeInToml",
+        "requiredItem",
+        "currentValueType",
+        "summary",
+        "scopeMode"
+      ],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "scopeMode": {
+                "const": "project"
+              }
+            },
+            "required": [
+              "scopeMode"
+            ]
+          },
+          "then": {
+            "properties": {
+              "targetProjects": {
+                "minItems": 1
+              }
+            },
+            "required": [
+              "targetProjects"
+            ]
+          }
+        }
+      ]
+    },
+    "otherSettings": {
+      "type": "object",
+      "title": "其他设置",
+      "description": "存放保存策略和帮助性信息。",
+      "properties": {
+        "preserveComments": {
+          "type": "string",
+          "title": "preserveComments",
+          "description": "保存 TOML 时是否尽量保留注释和原始格式。",
+          "enum": [
+            "yes",
+            "no"
+          ]
+        },
+        "showUnknownKeys": {
+          "type": "string",
+          "title": "showUnknownKeys",
+          "description": "是否显示当前模板之外但文件中真实存在的配置项。",
+          "enum": [
+            "yes",
+            "no"
+          ]
+        }
+      }
+    }
+  },
+  "required": [
+    "searchSettings",
+    "configItem"
+  ]
+}

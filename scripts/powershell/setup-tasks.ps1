@@ -28,13 +28,13 @@ if (-not (Test-FeatureJsonMatchesFeatureDir -RepoRoot $paths.REPO_ROOT -ActiveFe
 
 if (-not (Test-Path $paths.IMPL_PLAN -PathType Leaf)) {
     [Console]::Error.WriteLine("ERROR: plan.md not found in $($paths.FEATURE_DIR)")
-    [Console]::Error.WriteLine("Run /speckit.plan first to create the implementation plan.")
+    [Console]::Error.WriteLine("Run the sp.plan command first to create the implementation plan (skills hosts expose this as sp-plan).")
     exit 1
 }
 
 if (-not (Test-Path $paths.FEATURE_SPEC -PathType Leaf)) {
     [Console]::Error.WriteLine("ERROR: spec.md not found in $($paths.FEATURE_DIR)")
-    [Console]::Error.WriteLine("Run /speckit.specify first to create the feature structure.")
+    [Console]::Error.WriteLine("Run the sp.specify command first to create the feature structure (skills hosts expose this as sp-specify).")
     exit 1
 }
 

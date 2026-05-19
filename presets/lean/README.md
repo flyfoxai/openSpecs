@@ -10,11 +10,11 @@ Use Lean when you want the structured specify → plan → tasks → implement p
 
 | Command | Output | Description |
 |---------|--------|-------------|
-| `speckit.specify` | `spec.md` | Create a specification from a feature description |
-| `speckit.plan` | `plan.md` | Create an implementation plan from the spec |
-| `speckit.tasks` | `tasks.md` | Create dependency-ordered tasks from spec and plan |
-| `speckit.implement` | *(code)* | Execute all tasks in order, marking progress |
-| `speckit.constitution` | `constitution.md` | Create or update the project constitution |
+| `sp.specify` | `spec.md` | Create a specification from a feature description |
+| `sp.plan` | `plan.md` | Create an implementation plan from the spec |
+| `sp.tasks` | `tasks.md` | Create dependency-ordered tasks from spec and plan |
+| `sp.implement` | *(code)* | Execute all tasks in order, marking progress |
+| `sp.constitution` | `constitution.md` | Create or update the project constitution |
 
 ## What It Replaces
 
@@ -34,7 +34,7 @@ specify preset add lean
 specify preset add --dev ./presets/lean
 
 # Verify commands resolve
-specify preset resolve speckit.specify
+specify preset resolve sp.specify
 
 # Remove when done
 specify preset remove lean

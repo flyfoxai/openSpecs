@@ -7,8 +7,11 @@ Copilot has several unique behaviors compared to standard markdown agents:
 - Context file lives at ``.github/copilot-instructions.md``
 
 When ``--skills`` is passed via ``--integration-options``, Copilot scaffolds
-commands as ``speckit-<name>/SKILL.md`` directories under ``.github/skills/``
-instead.  The two modes are mutually exclusive.
+commands as agent skills under ``.github/skills/``. The directory name is
+resolved by ``skill_directory_name()``: built-in commands use
+``sp-<name>/SKILL.md`` and extension/preset commands use
+``speckit-<extension>-<name>/SKILL.md``. The two modes are mutually
+exclusive.
 """
 
 from __future__ import annotations
@@ -22,6 +25,7 @@ from typing import Any
 
 from ..base import IntegrationBase, IntegrationOption, SkillsIntegration
 from ..manifest import IntegrationManifest
+from specify_cli.command_names import command_file_name, command_invocation, core_command_stem
 
 
 def _allow_all() -> bool:
@@ -80,8 +84,11 @@ class CopilotIntegration(IntegrationBase):
     ``copilot`` CLI to be installed separately.
 
     When ``--skills`` is passed via ``--integration-options``, commands
-    are scaffolded as ``speckit-<name>/SKILL.md`` under ``.github/skills/``
-    instead of the default ``.agent.md`` + ``.prompt.md`` layout.
+    are scaffolded as agent skills under ``.github/skills/``. The
+    directory name is resolved by ``skill_directory_name()``: built-in
+    commands use ``sp-<name>/SKILL.md`` and extension/preset commands
+    use ``speckit-<extension>-<name>/SKILL.md``. This replaces the
+    default ``.agent.md`` + ``.prompt.md`` layout.
     """
 
     key = "copilot"
@@ -120,7 +127,7 @@ class CopilotIntegration(IntegrationBase):
                 "--skills",
                 is_flag=True,
                 default=False,
-                help="Scaffold commands as agent skills (speckit-<name>/SKILL.md) instead of .agent.md files",
+                help="Scaffold commands as agent skills (sp-<name>/SKILL.md for built-ins, speckit-<extension>-<name>/SKILL.md for extensions) instead of .agent.md files",
             ),
         ]
 
@@ -151,13 +158,10 @@ class CopilotIntegration(IntegrationBase):
         """Build the native invocation for a Copilot command.
 
         Default mode: agents are not slash-commands — return args as prompt.
-        Skills mode: ``/speckit-<stem>`` slash-command dispatch.
+        Skills mode: ``/sp-<stem>`` slash-command dispatch for built-ins.
         """
         if self._skills_mode:
-            stem = command_name
-            if stem.startswith("speckit."):
-                stem = stem[len("speckit."):]
-            invocation = "/speckit-" + stem.replace(".", "-")
+            invocation = command_invocation(command_name, "-")
             if args:
                 invocation = f"{invocation} {args}"
             return invocation
@@ -180,12 +184,15 @@ class CopilotIntegration(IntegrationBase):
         the user's arguments.
 
         In skills mode, the prompt includes the skill invocation
-        (``/speckit-<stem>``).
+        (``/sp-<stem>`` for built-ins).
         """
         import subprocess
 
         stem = command_name
-        if stem.startswith("speckit."):
+        core_stem = core_command_stem(stem)
+        if core_stem:
+            stem = core_stem
+        elif stem.startswith("speckit."):
             stem = stem[len("speckit."):]
 
         # Detect skills mode from project layout when not set via setup()
@@ -195,15 +202,15 @@ class CopilotIntegration(IntegrationBase):
             if skills_dir.is_dir():
                 skills_mode = any(
                     d.is_dir() and (d / "SKILL.md").is_file()
-                    for d in skills_dir.glob("speckit-*")
+                    for d in list(skills_dir.glob("sp-*")) + list(skills_dir.glob("speckit-*"))
                 )
 
         if skills_mode:
-            prompt = "/speckit-" + stem.replace(".", "-")
+            prompt = command_invocation(stem, "-")
             if args:
                 prompt = f"{prompt} {args}"
         else:
-            agent_name = f"speckit.{stem}"
+            agent_name = f"sp.{stem}" if core_command_stem(stem) else f"speckit.{stem}"
             prompt = args or ""
 
         cli_args = ["copilot", "-p", prompt]
@@ -252,12 +259,12 @@ class CopilotIntegration(IntegrationBase):
 
     def command_filename(self, template_name: str) -> str:
         """Copilot commands use ``.agent.md`` extension."""
-        return f"speckit.{template_name}.agent.md"
+        return command_file_name(template_name, ".agent.md")
 
     def post_process_skill_content(self, content: str) -> str:
         """Inject Copilot-specific ``mode:`` field into SKILL.md frontmatter.
 
-        Inserts ``mode: speckit.<stem>`` before the closing ``---`` so
+        Inserts ``mode: sp.<stem>`` for built-ins before the closing ``---`` so
         Copilot can associate the skill with its agent mode.
         """
         lines = content.splitlines(keepends=True)
@@ -276,10 +283,12 @@ class CopilotIntegration(IntegrationBase):
                 if stripped.startswith("mode:"):
                     return content  # already present
                 if stripped.startswith("name:"):
-                    # Parse: name: "speckit-plan" → speckit.plan
+                    # Parse: name: "sp-plan" → sp.plan
                     val = stripped.split(":", 1)[1].strip().strip('"').strip("'")
-                    # Convert speckit-plan → speckit.plan
-                    if val.startswith("speckit-"):
+                    # Convert skill name to command mode.
+                    if val.startswith("sp-"):
+                        skill_name = "sp." + val[len("sp-"):]
+                    elif val.startswith("speckit-"):
                         skill_name = "speckit." + val[len("speckit-"):]
                     else:
                         skill_name = val
@@ -317,7 +326,9 @@ class CopilotIntegration(IntegrationBase):
         """Install copilot commands, companion prompts, and VS Code settings.
 
         When ``parsed_options["skills"]`` is truthy, delegates to skills
-        scaffolding (``speckit-<name>/SKILL.md`` under ``.github/skills/``).
+        scaffolding under ``.github/skills/`` (directory name resolved by
+        ``skill_directory_name()``: ``sp-<name>/`` for built-ins,
+        ``speckit-<extension>-<name>/`` for extensions/presets).
         Otherwise uses the default ``.agent.md`` + ``.prompt.md`` layout.
         """
         parsed_options = parsed_options or {}
@@ -376,7 +387,7 @@ class CopilotIntegration(IntegrationBase):
         # 2. Generate companion .prompt.md files from the templates we just wrote
         prompts_dir = project_root / ".github" / "prompts"
         for src_file in templates:
-            cmd_name = f"speckit.{src_file.stem}"
+            cmd_name = f"sp.{src_file.stem}" if core_command_stem(src_file.stem) else f"speckit.{src_file.stem}"
             prompt_content = f"---\nagent: {cmd_name}\n---\n"
             prompt_file = self.write_file_and_record(
                 prompt_content,

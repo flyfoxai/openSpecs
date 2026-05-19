@@ -14,6 +14,7 @@ from typing import Any
 
 from ..base import MarkdownIntegration
 from ..manifest import IntegrationManifest
+from specify_cli.command_names import skill_directory_name
 
 
 def format_forge_command_name(cmd_name: str) -> str:
@@ -47,19 +48,10 @@ def format_forge_command_name(cmd_name: str) -> str:
         Hyphenated command name with 'speckit-' prefix
     """
     # Already in hyphenated format - return as-is (idempotent)
-    if cmd_name.startswith("speckit-"):
+    if cmd_name.startswith(("sp-", "speckit-")):
         return cmd_name
-    
-    # Strip 'speckit.' prefix if present
-    short_name = cmd_name
-    if short_name.startswith("speckit."):
-        short_name = short_name[len("speckit."):]
-    
-    # Replace all dots with hyphens
-    short_name = short_name.replace(".", "-")
-    
-    # Return with 'speckit-' prefix
-    return f"speckit-{short_name}"
+
+    return skill_directory_name(cmd_name)
 
 
 class ForgeIntegration(MarkdownIntegration):

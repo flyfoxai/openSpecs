@@ -8,7 +8,9 @@ Provides:
 - ``TomlIntegration`` — concrete base for TOML-format integrations
   (Gemini, Tabnine — subclass, set three class attrs, done).
 - ``SkillsIntegration`` — concrete base for integrations that install
-  commands as agent skills (``speckit-<name>/SKILL.md`` layout).
+  commands as agent skills. The directory name is resolved by
+  ``skill_directory_name()``: built-ins use ``sp-<name>/SKILL.md``,
+  extension/preset commands use ``speckit-<name>/SKILL.md``.
 """
 
 from __future__ import annotations
@@ -21,6 +23,12 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 import yaml
+
+from specify_cli.command_names import (
+    command_file_name,
+    command_invocation,
+    skill_directory_name,
+)
 
 if TYPE_CHECKING:
     from .manifest import IntegrationManifest
@@ -87,7 +95,7 @@ class IntegrationBase(ABC):
     """Relative path to the agent context file (e.g. ``CLAUDE.md``)."""
 
     invoke_separator: str = "."
-    """Separator used in slash-command invocations (``"."`` → ``/speckit.plan``)."""
+    """Separator used in slash-command invocations (``"."`` → ``/sp.plan`` for built-ins)."""
 
     multi_install_safe: bool = False
     """Whether this integration is declared safe to install alongside others.
@@ -143,18 +151,14 @@ class IntegrationBase(ABC):
 
         The CLI tools discover and execute commands from installed files
         on disk.  This method builds the invocation string the CLI
-        expects — e.g. ``"/speckit.specify my-feature"`` for markdown
-        agents or ``"/speckit-specify my-feature"`` for skills agents.
+        expects — e.g. ``"/sp.specify my-feature"`` for markdown
+        agents or ``"/sp-specify my-feature"`` for skills agents.
 
         *command_name* may be a full dotted name like
-        ``"speckit.specify"``, an extension command like
+        ``"sp.specify"`` or legacy ``"speckit.specify"``, an extension command like
         ``"speckit.git.commit"``, or a bare stem like ``"specify"``.
         """
-        stem = command_name
-        if stem.startswith("speckit."):
-            stem = stem[len("speckit."):]
-
-        invocation = f"/speckit.{stem}"
+        invocation = command_invocation(command_name, self.invoke_separator)
         if args:
             invocation = f"{invocation} {args}"
         return invocation
@@ -287,10 +291,11 @@ class IntegrationBase(ABC):
         """Return the destination filename for a command template.
 
         *template_name* is the stem of the source file (e.g. ``"plan"``).
-        Default: ``speckit.{template_name}.md``.  Subclasses override
+        Default: ``sp.{template_name}.md`` for built-ins and
+        ``speckit.{template_name}.md`` for extension commands. Subclasses override
         to change the extension or naming convention.
         """
-        return f"speckit.{template_name}.md"
+        return command_file_name(template_name, ".md")
 
     def commands_dest(self, project_root: Path) -> Path:
         """Return the absolute path to the commands output directory.
@@ -633,12 +638,12 @@ class IntegrationBase(ABC):
         ``__SPECKIT_COMMAND_GIT_COMMIT__``).  The replacement uses
         *separator* to join the segments:
 
-        * ``separator="."`` → ``/speckit.plan``, ``/speckit.git.commit``
-        * ``separator="-"`` → ``/speckit-plan``, ``/speckit-git-commit``
+        * ``separator="."`` → ``/sp.plan`` for built-ins, ``/speckit.git.commit`` for extensions
+        * ``separator="-"`` → ``/sp-plan`` for built-ins, ``/speckit-git-commit`` for extensions
         """
         return re.sub(
             r"__SPECKIT_COMMAND_([A-Z][A-Z0-9_]*)__",
-            lambda m: "/speckit" + separator + m.group(1).lower().replace("_", separator),
+            lambda m: command_invocation(m.group(1).lower().replace("_", "."), separator),
             content,
         )
 
@@ -656,7 +661,7 @@ class IntegrationBase(ABC):
         Performs the same transformations as the release script:
         1. Extract ``scripts.<script_type>`` value from YAML frontmatter
         2. Replace ``{SCRIPT}`` with the extracted script command
-        3. Strip ``scripts:`` section from frontmatter
+        3. Strip ``scripts:`` and ``agent_scripts:`` sections from frontmatter
         4. Replace ``{ARGS}`` and ``$ARGUMENTS`` with *arg_placeholder*
         5. Replace ``__AGENT__`` with *agent_name*
         6. Replace ``__CONTEXT_FILE__`` with *context_file*
@@ -686,7 +691,9 @@ class IntegrationBase(ABC):
         if script_command:
             content = content.replace("{SCRIPT}", script_command)
 
-        # 3. Strip scripts: section from frontmatter
+        # 3. Strip runtime script sections from frontmatter. ``agent_scripts``
+        # is historical metadata and must not leak into hosts when the target
+        # update-agent-context scripts are not installed.
         lines = content.splitlines(keepends=True)
         output_lines: list[str] = []
         in_frontmatter = False
@@ -704,7 +711,7 @@ class IntegrationBase(ABC):
                 output_lines.append(line)
                 continue
             if in_frontmatter:
-                if stripped == "scripts:":
+                if stripped in {"scripts:", "agent_scripts:"}:
                     skip_section = True
                     continue
                 if skip_section:
@@ -946,7 +953,7 @@ class TomlIntegration(IntegrationBase):
 
     def command_filename(self, template_name: str) -> str:
         """TOML commands use ``.toml`` extension."""
-        return f"speckit.{template_name}.toml"
+        return command_file_name(template_name, ".toml")
 
     @staticmethod
     def _extract_description(content: str) -> str:
@@ -1137,7 +1144,7 @@ class YamlIntegration(IntegrationBase):
 
     def command_filename(self, template_name: str) -> str:
         """YAML commands use ``.yaml`` extension."""
-        return f"speckit.{template_name}.yaml"
+        return command_file_name(template_name, ".yaml")
 
     @staticmethod
     def _extract_frontmatter(content: str) -> dict[str, Any]:
@@ -1332,16 +1339,20 @@ class YamlIntegration(IntegrationBase):
 class SkillsIntegration(IntegrationBase):
     """Concrete base for integrations that install commands as agent skills.
 
-    Skills use the ``speckit-<name>/SKILL.md`` directory layout following
-    the `agentskills.io <https://agentskills.io/specification>`_ spec.
+    Skills follow the `agentskills.io <https://agentskills.io/specification>`_
+    spec. The on-disk layout is resolved by ``skill_directory_name()``:
+    built-in commands install to ``sp-<name>/SKILL.md`` and extension or
+    preset commands install to ``speckit-<extension>-<name>/SKILL.md``.
+    Do not hard-code either prefix in tests or new integrations — always
+    go through ``skill_directory_name()``.
 
     Subclasses set ``key``, ``config``, ``registrar_config`` (and
     optionally ``context_file``) like any integration.  They may also
     override ``options()`` to declare additional CLI flags (e.g.
     ``--skills``, ``--migrate-legacy``).
 
-    ``setup()`` processes each shared command template into a
-    ``speckit-<name>/SKILL.md`` file with skills-oriented frontmatter.
+    ``setup()`` processes each shared command template into a SKILL.md
+    file under the resolved directory with skills-oriented frontmatter.
     """
 
     invoke_separator = "-"
@@ -1381,12 +1392,8 @@ class SkillsIntegration(IntegrationBase):
         return project_root / folder / subdir
 
     def build_command_invocation(self, command_name: str, args: str = "") -> str:
-        """Skills use ``/speckit-<stem>`` (hyphenated directory name)."""
-        stem = command_name
-        if stem.startswith("speckit."):
-            stem = stem[len("speckit."):]
-
-        invocation = "/speckit-" + stem.replace(".", "-")
+        """Skills use hyphenated invocations, e.g. ``/sp-plan`` for built-ins."""
+        invocation = command_invocation(command_name, self.invoke_separator)
         if args:
             invocation = f"{invocation} {args}"
         return invocation
@@ -1410,8 +1417,10 @@ class SkillsIntegration(IntegrationBase):
     ) -> list[Path]:
         """Install command templates as agent skills.
 
-        Creates ``speckit-<name>/SKILL.md`` for each shared command
-        template.  Each SKILL.md has normalised frontmatter containing
+        Creates a SKILL.md for each shared command template under the
+        directory returned by ``skill_directory_name()`` (``sp-<name>/``
+        for built-ins, ``speckit-<name>/`` for extensions/presets).
+        Each SKILL.md has normalised frontmatter containing
         ``name``, ``description``, ``compatibility``, and ``metadata``.
         """
 
@@ -1448,7 +1457,7 @@ class SkillsIntegration(IntegrationBase):
 
             # Derive the skill name from the template stem
             command_name = src_file.stem  # e.g. "plan"
-            skill_name = f"speckit-{command_name.replace('.', '-')}"
+            skill_name = skill_directory_name(command_name)
 
             # Parse frontmatter for description
             frontmatter: dict[str, Any] = {}
@@ -1502,7 +1511,8 @@ class SkillsIntegration(IntegrationBase):
                 f"{processed_body}"
             )
 
-            # Write speckit-<name>/SKILL.md
+            # Write the SKILL.md under the resolved directory
+            # (sp-<name>/ for built-ins, speckit-<name>/ for extensions).
             skill_dir = skills_dir / skill_name
             skill_file = skill_dir / "SKILL.md"
             dst = self.write_file_and_record(

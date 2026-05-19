@@ -1,0 +1,26 @@
+flowchart TD
+    STEP010[STEP-LEAVE-010 Open SCREEN-LEAVE-APPLY] --> STEP015[STEP-LEAVE-015 Fill leave fields]
+    STEP015 --> DEC020{DEC-LEAVE-020 Required fields and time valid?}
+    DEC020 -- No --> EX021[EX-LEAVE-021 Show base validation error]
+    EX021 --> STEP015
+    DEC020 -- Yes --> DEC030{DEC-LEAVE-030 Balance and conflict valid?}
+    DEC030 -- No --> EX031[EX-LEAVE-031 Show balance or conflict error]
+    EX031 --> STEP015
+    DEC030 -- Yes --> STEP040[STEP-LEAVE-040 Trigger UC-LEAVE-SUBMIT]
+    STEP040 --> STEP050[STEP-LEAVE-050 Call API-LEAVE-CREATE]
+    STEP050 --> STEP060[STEP-LEAVE-060 Insert TABLE-LEAVE_REQUEST as pending]
+    STEP060 --> STEP070[STEP-LEAVE-070 Create manager todo]
+    STEP070 --> STEP080[STEP-LEAVE-080 Open SCREEN-LEAVE-APPROVAL]
+    STEP080 --> DEC090{DEC-LEAVE-090 Approve or reject?}
+    DEC090 -- Approve --> STEP100[STEP-LEAVE-100 Trigger UC-LEAVE-APPROVE]
+    STEP100 --> STEP110[STEP-LEAVE-110 Update request and insert approval record]
+    STEP110 --> STEP120[STEP-LEAVE-120 Emit EVT-LEAVE-APPROVED]
+    STEP120 --> DEC130{DEC-LEAVE-130 Side effects finished?}
+    DEC130 -- Yes --> STEP140[STEP-LEAVE-140 Reserve balance and send notification]
+    STEP140 --> STEP150[STEP-LEAVE-150 Employee sees approved detail]
+    DEC130 -- No --> EX111[EX-LEAVE-111 Record compensation and keep approval success]
+    EX111 --> STEP150
+    DEC090 -- Reject --> STEP160[STEP-LEAVE-160 Trigger UC-LEAVE-REJECT]
+    STEP160 --> STEP170[STEP-LEAVE-170 Update request rejected and insert approval record]
+    STEP170 --> STEP180[STEP-LEAVE-180 Send reject notification]
+    STEP180 --> STEP190[STEP-LEAVE-190 Employee sees rejected detail]

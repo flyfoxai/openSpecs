@@ -27,7 +27,41 @@ import yaml
 from packaging import version as pkg_version
 from packaging.specifiers import SpecifierSet, InvalidSpecifier
 
+from .command_names import core_command_stem, skill_directory_name
 from .extensions import REINSTALL_COMMAND, ExtensionRegistry, normalize_priority
+
+
+def _command_short_name(cmd_name: str) -> str:
+    """Return the unprefixed command name for built-ins and legacy core names."""
+    stem = core_command_stem(cmd_name)
+    if stem:
+        return stem
+    if cmd_name.startswith("speckit."):
+        return cmd_name[len("speckit."):]
+    if cmd_name.startswith("sp."):
+        return cmd_name[len("sp."):]
+    return cmd_name
+
+
+def _command_lookup_names(template_name: str) -> List[str]:
+    """Return candidate command file names for SP and legacy core names."""
+    names = [template_name]
+    stem = core_command_stem(template_name)
+    if stem:
+        for candidate in (f"sp.{stem}", f"speckit.{stem}", stem):
+            if candidate not in names:
+                names.append(candidate)
+        return names
+
+    if template_name.startswith("sp."):
+        legacy = "speckit." + template_name[len("sp."):]
+        if legacy not in names:
+            names.append(legacy)
+    elif template_name.startswith("speckit."):
+        sp_name = "sp." + template_name[len("speckit."):]
+        if sp_name not in names:
+            names.append(sp_name)
+    return names
 
 
 def _substitute_core_template(
@@ -54,10 +88,8 @@ def _substitute_core_template(
     if "{CORE_TEMPLATE}" not in body:
         return body, {}
 
-    # Derive the short name (strip "speckit." prefix) used by core command templates.
-    short_name = cmd_name
-    if short_name.startswith("speckit."):
-        short_name = short_name[len("speckit."):]
+    # Derive the short name used by core command templates.
+    short_name = _command_short_name(cmd_name)
 
     resolver = PresetResolver(project_root)
     # Resolution order for the core template:
@@ -988,15 +1020,23 @@ class PresetManager:
             # (i.e., listed in some preset's registered_skills). This avoids
             # creating new skill dirs that _register_skills would normally skip.
             if skills_dir:
-                skill_name, _ = self._skill_names_for_command(cmd_name)
-                skill_subdir = skills_dir / skill_name
+                skill_candidates = self._skill_name_candidates_for_command(cmd_name)
+                skill_subdir = next(
+                    (
+                        skills_dir / name
+                        for name in skill_candidates
+                        if (skills_dir / name).exists()
+                    ),
+                    skills_dir / skill_candidates[0],
+                )
                 if not skill_subdir.exists():
                     # Check if any preset previously registered this skill
                     was_managed = False
                     for _pid, meta in presets_by_priority:
                         if not isinstance(meta, dict):
                             continue
-                        if skill_name in meta.get("registered_skills", []):
+                        registered = meta.get("registered_skills", [])
+                        if any(name in registered for name in skill_candidates):
                             was_managed = True
                             break
                     if was_managed:
@@ -1014,8 +1054,14 @@ class PresetManager:
             if not found_preset:
                 # Winner is a non-preset source (core/extension/override).
                 # Track the winning layer path for skill restoration.
-                skill_name, _ = self._skill_names_for_command(cmd_name)
-                non_preset_skills.append((skill_name, cmd_name, layers[0]))
+                found_skill = False
+                for skill_name in self._skill_name_candidates_for_command(cmd_name):
+                    if skills_dir and (skills_dir / skill_name).is_dir():
+                        non_preset_skills.append((skill_name, cmd_name, layers[0]))
+                        found_skill = True
+                if not found_skill:
+                    skill_name, _ = self._skill_names_for_command(cmd_name)
+                    non_preset_skills.append((skill_name, cmd_name, layers[0]))
 
         # Restore skills for commands whose winner is non-preset.
         if non_preset_skills and skills_dir:
@@ -1045,9 +1091,7 @@ class PresetManager:
                     registrar = CommandRegistrar()
                     content = top_layer["path"].read_text(encoding="utf-8")
                     fm, body = registrar.parse_frontmatter(content)
-                    short_name = cmd_name
-                    if short_name.startswith("speckit."):
-                        short_name = short_name[len("speckit."):]
+                    short_name = _command_short_name(cmd_name)
                     desc = fm.get("description", "") or SKILL_DESCRIPTIONS.get(
                         short_name.replace(".", "-"),
                         f"Command: {short_name}",
@@ -1131,20 +1175,33 @@ class PresetManager:
     @staticmethod
     def _skill_names_for_command(cmd_name: str) -> tuple[str, str]:
         """Return the modern and legacy skill directory names for a command."""
-        raw_short_name = cmd_name
-        if raw_short_name.startswith("speckit."):
-            raw_short_name = raw_short_name[len("speckit."):]
+        stem = core_command_stem(cmd_name)
+        if stem:
+            return skill_directory_name(cmd_name), f"speckit-{stem.replace('.', '-')}"
 
+        raw_short_name = _command_short_name(cmd_name)
         modern_skill_name = f"speckit-{raw_short_name.replace('.', '-')}"
         legacy_skill_name = f"speckit.{raw_short_name}"
         return modern_skill_name, legacy_skill_name
 
     @staticmethod
+    def _skill_name_candidates_for_command(cmd_name: str) -> List[str]:
+        """Return modern and legacy skill directory names to update."""
+        modern_skill_name, legacy_skill_name = PresetManager._skill_names_for_command(cmd_name)
+        candidates = [modern_skill_name]
+        if legacy_skill_name not in candidates:
+            candidates.append(legacy_skill_name)
+        stem = core_command_stem(cmd_name)
+        if stem:
+            dotted_legacy = f"speckit.{stem}"
+            if dotted_legacy not in candidates:
+                candidates.append(dotted_legacy)
+        return candidates
+
+    @staticmethod
     def _skill_title_from_command(cmd_name: str) -> str:
         """Return a human-friendly title for a skill command name."""
-        title_name = cmd_name
-        if title_name.startswith("speckit."):
-            title_name = title_name[len("speckit."):]
+        title_name = _command_short_name(cmd_name)
         return title_name.replace(".", " ").replace("-", " ").title()
 
     def _build_extension_skill_restore_index(self) -> Dict[str, Dict[str, Any]]:
@@ -1195,6 +1252,9 @@ class PresetManager:
                 restore_index.setdefault(modern_skill_name, restore_info)
                 if legacy_skill_name != modern_skill_name:
                     restore_index.setdefault(legacy_skill_name, restore_info)
+                stem = core_command_stem(cmd_name)
+                if stem:
+                    restore_index.setdefault(f"speckit.{stem}", restore_info)
 
         return restore_index
 
@@ -1279,22 +1339,19 @@ class PresetManager:
             if composed_file.exists():
                 source_file = composed_file
 
-            # Derive the short command name (e.g. "specify" from "speckit.specify")
-            raw_short_name = cmd_name
-            if raw_short_name.startswith("speckit."):
-                raw_short_name = raw_short_name[len("speckit."):]
+            # Derive the short command name (e.g. "specify" from "sp.specify").
+            raw_short_name = _command_short_name(cmd_name)
             short_name = raw_short_name.replace(".", "-")
-            skill_name, legacy_skill_name = self._skill_names_for_command(cmd_name)
+            skill_name, _ = self._skill_names_for_command(cmd_name)
             skill_title = self._skill_title_from_command(cmd_name)
 
             # Only overwrite skills that already exist under skills_dir,
             # including Kimi native skills when ai_skills is false.
             # If both modern and legacy directories exist, update both.
             target_skill_names: List[str] = []
-            if (skills_dir / skill_name).is_dir():
-                target_skill_names.append(skill_name)
-            if legacy_skill_name != skill_name and (skills_dir / legacy_skill_name).is_dir():
-                target_skill_names.append(legacy_skill_name)
+            for candidate in self._skill_name_candidates_for_command(cmd_name):
+                if (skills_dir / candidate).is_dir():
+                    target_skill_names.append(candidate)
             if not target_skill_names and create_missing_skills:
                 missing_skill_dir = skills_dir / skill_name
                 if not missing_skill_dir.exists():
@@ -1389,7 +1446,9 @@ class PresetManager:
         for skill_name in skill_names:
             # Derive command name from skill name (speckit-specify -> specify)
             short_name = skill_name
-            if short_name.startswith("speckit-"):
+            if short_name.startswith("sp-"):
+                short_name = short_name[len("sp-"):]
+            elif short_name.startswith("speckit-"):
                 short_name = short_name[len("speckit-"):]
             elif short_name.startswith("speckit."):
                 short_name = short_name[len("speckit."):]
@@ -2409,13 +2468,22 @@ class PresetResolver:
     def _core_stem(template_name: str) -> Optional[str]:
         """Extract the stem for core command lookup.
 
-        Commands use dot notation (e.g. ``speckit.specify``), but core
+        Commands use dot notation (e.g. ``sp.specify``), but core
         command files are named by stem (e.g. ``specify.md``).  Returns
-        the stem if *template_name* follows the ``speckit.<stem>`` pattern,
-        or ``None`` otherwise.
+        the stem if *template_name* names a built-in command or follows
+        the single-segment core fallback form.
         """
+        stem = core_command_stem(template_name)
+        if stem:
+            return stem
         if template_name.startswith("speckit."):
-            return template_name[len("speckit."):]
+            remainder = template_name[len("speckit."):]
+            if "." not in remainder:
+                return remainder
+        if template_name.startswith("sp."):
+            remainder = template_name[len("sp."):]
+            if "." not in remainder:
+                return remainder
         return None
 
     def resolve(
@@ -2455,6 +2523,15 @@ class PresetResolver:
         # Priority 1: Project-local overrides
         if template_type == "script":
             override = self.overrides_dir / "scripts" / f"{template_name}{ext}"
+        elif template_type == "command":
+            override = next(
+                (
+                    self.overrides_dir / f"{name}{ext}"
+                    for name in _command_lookup_names(template_name)
+                    if (self.overrides_dir / f"{name}{ext}").exists()
+                ),
+                self.overrides_dir / f"{template_name}{ext}",
+            )
         else:
             override = self.overrides_dir / f"{template_name}{ext}"
         if override.exists():
@@ -2466,12 +2543,18 @@ class PresetResolver:
             for pack_id, _metadata in registry.list_by_priority():
                 pack_dir = self.presets_dir / pack_id
                 for subdir in subdirs:
-                    if subdir:
-                        candidate = pack_dir / subdir / f"{template_name}{ext}"
-                    else:
-                        candidate = pack_dir / f"{template_name}{ext}"
-                    if candidate.exists():
-                        return candidate
+                    lookup_names = (
+                        _command_lookup_names(template_name)
+                        if template_type == "command"
+                        else [template_name]
+                    )
+                    for name in lookup_names:
+                        if subdir:
+                            candidate = pack_dir / subdir / f"{name}{ext}"
+                        else:
+                            candidate = pack_dir / f"{name}{ext}"
+                        if candidate.exists():
+                            return candidate
 
         # Priority 3: Extension-provided templates (sorted by priority — lower number wins)
         for _priority, ext_id, _metadata in self._get_all_extensions_by_priority():
@@ -2705,17 +2788,32 @@ class PresetResolver:
 
         def _find_in_subdirs(base_dir: Path) -> Optional[Path]:
             for subdir in subdirs:
-                if subdir:
-                    candidate = base_dir / subdir / f"{template_name}{ext}"
-                else:
-                    candidate = base_dir / f"{template_name}{ext}"
-                if candidate.exists():
-                    return candidate
+                lookup_names = (
+                    _command_lookup_names(template_name)
+                    if template_type == "command"
+                    else [template_name]
+                )
+                for name in lookup_names:
+                    if subdir:
+                        candidate = base_dir / subdir / f"{name}{ext}"
+                    else:
+                        candidate = base_dir / f"{name}{ext}"
+                    if candidate.exists():
+                        return candidate
             return None
 
         # Priority 1: Project-local overrides (always "replace" strategy)
         if template_type == "script":
             override = self.overrides_dir / "scripts" / f"{template_name}{ext}"
+        elif template_type == "command":
+            override = next(
+                (
+                    self.overrides_dir / f"{name}{ext}"
+                    for name in _command_lookup_names(template_name)
+                    if (self.overrides_dir / f"{name}{ext}").exists()
+                ),
+                self.overrides_dir / f"{template_name}{ext}",
+            )
         else:
             override = self.overrides_dir / f"{template_name}{ext}"
         if override.exists():

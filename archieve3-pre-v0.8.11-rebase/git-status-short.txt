@@ -1,0 +1,174 @@
+ M .gitignore
+ D .specify/memory/active-context.md
+ D .specify/memory/constitution.md
+ D .specify/memory/domain-map.md
+ D .specify/memory/feature-map.md
+ D .specify/memory/hotspots.md
+ D .specify/memory/project-index.md
+ M AGENTS.md
+ D README.en.md
+ M README.md
+ D READMEDETAILS.en.md
+ D READMEDETAILS.md
+ D docs/layered-business-framework.md
+ D docs/sp-agent-install-strategy.md
+ D docs/sp-agent-validation-matrix.md
+ D docs/sp-analysis-example-leave-request.md
+ D docs/sp-auto-development-minimum-spec.md
+ D docs/sp-auto-development-passline.md
+ D docs/sp-auto-development-readiness.md
+ D docs/sp-command-output-contracts.md
+ D docs/sp-command-spec.md
+ D docs/sp-command-template-drafts.md
+ D docs/sp-context-memory-architecture.md
+ D docs/sp-document-stage-closeout-checklist.md
+ D docs/sp-feature-template-pack.md
+ D docs/sp-fork-file-map.md
+ D docs/sp-fork-patch-tasklist.md
+ D docs/sp-installation-and-agent-compatibility.md
+ D docs/sp-medium-project-smoke-test.md
+ D docs/sp-project-memory-architecture.md
+ D docs/sp-real-fork-execution-plan.md
+ D docs/sp-template-file-manifest.md
+ D docs/sp-upstream-agent-alignment.md
+ D docs/spec-kit-fork-adaptation.md
+ D installer-assets/claude-commands/sp.analyze.md
+ D installer-assets/claude-commands/sp.bundle.md
+ D installer-assets/claude-commands/sp.clarify.md
+ D installer-assets/claude-commands/sp.constitution.md
+ D installer-assets/claude-commands/sp.flow.md
+ D installer-assets/claude-commands/sp.gate.md
+ D installer-assets/claude-commands/sp.plan.md
+ D installer-assets/claude-commands/sp.specify.md
+ D installer-assets/claude-commands/sp.tasks.md
+ D installer-assets/claude-commands/sp.ui.md
+ D installer-assets/codex-prompts/sp.analyze.md
+ D installer-assets/codex-prompts/sp.bundle.md
+ D installer-assets/codex-prompts/sp.clarify.md
+ D installer-assets/codex-prompts/sp.constitution.md
+ D installer-assets/codex-prompts/sp.flow.md
+ D installer-assets/codex-prompts/sp.gate.md
+ D installer-assets/codex-prompts/sp.plan.md
+ D installer-assets/codex-prompts/sp.specify.md
+ D installer-assets/codex-prompts/sp.tasks.md
+ D installer-assets/codex-prompts/sp.ui.md
+ D installer-assets/project/.specify/memory/active-context.md
+ D installer-assets/project/.specify/memory/constitution.md
+ D installer-assets/project/.specify/memory/domain-map.md
+ D installer-assets/project/.specify/memory/feature-map.md
+ D installer-assets/project/.specify/memory/hotspots.md
+ D installer-assets/project/.specify/memory/project-index.md
+ D installer-assets/project/docs/sp-overview-details.en.md
+ D installer-assets/project/docs/sp-overview-details.zh-CN.md
+ D installer-assets/project/docs/sp-overview.en.md
+ D installer-assets/project/docs/sp-overview.zh-CN.md
+ D installer-assets/project/specs/.gitkeep
+ D layer-1-business-clarification/README.md
+ D layer-1-business-clarification/checklists/clarification-gate.md
+ D layer-1-business-clarification/docs/json-forms-selection.md
+ D layer-1-business-clarification/docs/visual-business-with-mcp.md
+ D layer-1-business-clarification/examples/codex-config-manager-example.md
+ D layer-1-business-clarification/package.json
+ D layer-1-business-clarification/prompts/business-facilitator-system-prompt.md
+ D layer-1-business-clarification/templates/business-clarification-template.md
+ D layer-1-business-clarification/templates/business-visualization-template.md
+ D layer-1-business-clarification/templates/json-forms-config-data.example.json
+ D layer-1-business-clarification/templates/json-forms-config-schema.template.json
+ D layer-1-business-clarification/templates/json-forms-config-uischema.template.json
+ D layer-2-delivery/README.md
+ D materials/README.md
+ D materials/installation-and-usage.md
+ D materials/installation-and-usage_en.md
+ D materials/marketing-pitch.md
+ D materials/marketing-pitch_en.md
+ D materials/project-overview_en.md
+ D package.json
+ D scripts/install.ps1
+ D scripts/install.sh
+ D specs/attendance-leave/analysis.md
+ D specs/attendance-leave/bundle.md
+ D specs/attendance-leave/clarifications.md
+ D specs/attendance-leave/clarify-log.md
+ D specs/attendance-leave/delivery/01-prd.md
+ D specs/attendance-leave/delivery/02-screen-to-delivery-map.md
+ D specs/attendance-leave/delivery/03-use-case-matrix.md
+ D specs/attendance-leave/delivery/04-domain-model.md
+ D specs/attendance-leave/delivery/05-data-entity-catalog.md
+ D specs/attendance-leave/delivery/06-table-index.md
+ D specs/attendance-leave/delivery/07-api-contracts.md
+ D specs/attendance-leave/delivery/08-permissions-matrix.md
+ D specs/attendance-leave/delivery/09-events-and-side-effects.md
+ D specs/attendance-leave/delivery/10-non-functional-requirements.md
+ D specs/attendance-leave/delivery/11-module-boundaries.md
+ D specs/attendance-leave/delivery/12-test-and-acceptance.md
+ D specs/attendance-leave/delivery/tables/table-leave-approval.md
+ D specs/attendance-leave/delivery/tables/table-leave-balance-ledger.md
+ D specs/attendance-leave/delivery/tables/table-leave-request.md
+ D specs/attendance-leave/flows/index.md
+ D specs/attendance-leave/flows/main-flow.mmd
+ D specs/attendance-leave/flows/sequence.mmd
+ D specs/attendance-leave/flows/state.mmd
+ D specs/attendance-leave/gate.md
+ D specs/attendance-leave/memory/index.md
+ D specs/attendance-leave/memory/open-items.md
+ D specs/attendance-leave/memory/stable-context.md
+ D specs/attendance-leave/memory/trace-index.md
+ D specs/attendance-leave/memory/worksets/index.md
+ D specs/attendance-leave/memory/worksets/ws-leave-employee-submit.md
+ D specs/attendance-leave/memory/worksets/ws-leave-manager-approval.md
+ D specs/attendance-leave/memory/worksets/ws-leave-query-withdraw.md
+ D specs/attendance-leave/memory/worksets/ws-leave-side-effects.md
+ D specs/attendance-leave/plan.md
+ D specs/attendance-leave/spec.md
+ D specs/attendance-leave/tasks.md
+ D specs/attendance-leave/ui/index.md
+ D specs/attendance-leave/ui/jsonforms/data.example.json
+ D specs/attendance-leave/ui/jsonforms/schema.json
+ D specs/attendance-leave/ui/jsonforms/uischema.json
+ D specs/attendance-leave/ui/screen-leave-apply.md
+ D specs/attendance-leave/ui/screen-leave-approval.md
+ D specs/attendance-leave/ui/screen-leave-detail.md
+ D specs/attendance-leave/ui/screen-leave-list.md
+ D specs/attendance-leave/ui/screen-map.md
+ D specs/codex-skills-installation/analysis.md
+ D specs/codex-skills-installation/memory/index.md
+ D specs/codex-skills-installation/memory/open-items.md
+ D specs/codex-skills-installation/memory/stable-context.md
+ D specs/codex-skills-installation/spec.md
+?? .devcontainer/
+?? .gitattributes
+?? .github/
+?? .markdownlint-cli2.jsonc
+?? CHANGELOG.md
+?? CODE_OF_CONDUCT.md
+?? CONTRIBUTING.md
+?? DEVELOPMENT.md
+?? LICENSE
+?? SECURITY.md
+?? SUPPORT.md
+?? archieve2/
+?? docs/.gitignore
+?? docs/README.md
+?? docs/community/
+?? docs/docfx.json
+?? docs/index.md
+?? docs/installation.md
+?? docs/local-development.md
+?? docs/quickstart.md
+?? docs/reference/
+?? docs/toc.yml
+?? docs/upgrade.md
+?? extensions/
+?? integrations/
+?? media/
+?? newsletters/
+?? presets/
+?? pyproject.toml
+?? scripts/bash/
+?? scripts/powershell/
+?? spec-driven.md
+?? spec-kit.code-workspace
+?? src/
+?? templates/
+?? tests/
+?? workflows/

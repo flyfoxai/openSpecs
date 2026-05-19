@@ -289,6 +289,118 @@ if ($branchName.Length -gt $maxBranchLength) {
 
 $featureDir = Join-Path $specsDir $branchName
 $specFile = Join-Path $featureDir 'spec.md'
+$featureDate = Get-Date -Format 'yyyy-MM-dd'
+
+function Get-FeatureTitle {
+    param([string]$Suffix)
+    $words = $Suffix -split '-' | Where-Object { $_ }
+    $titleWords = foreach ($word in $words) {
+        if ($word.Length -le 1) {
+            $word.ToUpperInvariant()
+        } else {
+            $word.Substring(0, 1).ToUpperInvariant() + $word.Substring(1)
+        }
+    }
+    return ($titleWords -join ' ')
+}
+
+function Replace-FeaturePlaceholders {
+    param(
+        [string]$Path,
+        [string]$FeatureTitle,
+        [string]$FeaturePath
+    )
+
+    if (-not (Test-Path $Path -PathType Leaf)) { return }
+    $content = [System.IO.File]::ReadAllText($Path)
+    $content = $content.Replace('__FEATURE_BRANCH__', $branchName)
+    $content = $content.Replace('__FEATURE_DATE__', $featureDate)
+    $content = $content.Replace('__FEATURE_TITLE__', $FeatureTitle)
+    $content = $content.Replace('__FEATURE_DESCRIPTION__', $featureDesc)
+    $content = $content.Replace('__FEATURE_PATH__', $FeaturePath)
+    $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+    [System.IO.File]::WriteAllText($Path, $content, $utf8NoBom)
+}
+
+function Initialize-FeatureScaffold {
+    param([string]$FeatureTitle)
+
+    $scaffoldRoot = Join-Path $repoRoot '.specify/templates/feature'
+    if (-not (Test-Path $scaffoldRoot -PathType Container)) { return }
+
+    $featurePath = "specs/$branchName"
+    Get-ChildItem -LiteralPath $scaffoldRoot -File -Recurse | Sort-Object FullName | ForEach-Object {
+        $rel = [System.IO.Path]::GetRelativePath($scaffoldRoot, $_.FullName)
+        $dst = Join-Path $featureDir $rel
+        $dstParent = Split-Path -Parent $dst
+        if (-not (Test-Path $dstParent -PathType Container)) {
+            New-Item -ItemType Directory -Path $dstParent -Force | Out-Null
+        }
+        if (-not (Test-Path $dst)) {
+            Copy-Item -LiteralPath $_.FullName -Destination $dst
+            Replace-FeaturePlaceholders -Path $dst -FeatureTitle $FeatureTitle -FeaturePath $featurePath
+        }
+    }
+}
+
+function Persist-ActiveFeature {
+    $featurePath = "specs/$branchName"
+    $specifyDir = Join-Path $repoRoot '.specify'
+    if (-not (Test-Path $specifyDir -PathType Container)) {
+        New-Item -ItemType Directory -Path $specifyDir -Force | Out-Null
+    }
+    $featureConfig = [ordered]@{
+        branch = $branchName
+        feature_directory = $featurePath
+        spec_file = "$featurePath/spec.md"
+        created_at = $featureDate
+    }
+    $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+    [System.IO.File]::WriteAllText(
+        (Join-Path $specifyDir 'feature.json'),
+        ($featureConfig | ConvertTo-Json -Compress),
+        $utf8NoBom
+    )
+}
+
+function Refresh-ProjectRoutingMemory {
+    $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+    $activeContext = Join-Path $repoRoot '.specify/memory/active-context.md'
+    $projectIndex = Join-Path $repoRoot '.specify/memory/project-index.md'
+    $featureMap = Join-Path $repoRoot '.specify/memory/feature-map.md'
+
+    foreach ($path in @($activeContext, $projectIndex)) {
+        if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { continue }
+        $lines = [System.IO.File]::ReadAllLines($path)
+        $updated = foreach ($line in $lines) {
+            if ($line -match '^\| Active Feature \|') {
+                "| Active Feature | $branchName |"
+            } elseif ($line -match '^\| Refresh Date \|') {
+                "| Refresh Date | $featureDate |"
+            } else {
+                $line
+            }
+        }
+        [System.IO.File]::WriteAllLines($path, [string[]]$updated, $utf8NoBom)
+    }
+
+    if (Test-Path -LiteralPath $featureMap -PathType Leaf) {
+        $content = [System.IO.File]::ReadAllText($featureMap)
+        if ($content -notmatch [regex]::Escape("| $branchName |")) {
+            $lines = [System.IO.File]::ReadAllLines($featureMap)
+            $updatedLines = New-Object System.Collections.Generic.List[string]
+            $inserted = $false
+            foreach ($line in $lines) {
+                $updatedLines.Add($line)
+                if (-not $inserted -and $line -match '^\| --- \| --- \| --- \| --- \| --- \| --- \| --- \|$') {
+                    $updatedLines.Add("| $branchName | tbd | spec initialized | n/a | n/a | ``specs/$branchName/memory/index.md`` | not selected |")
+                    $inserted = $true
+                }
+            }
+            [System.IO.File]::WriteAllLines($featureMap, $updatedLines.ToArray(), $utf8NoBom)
+        }
+    }
+}
 
 if (-not $DryRun) {
     if ($hasGit) {
@@ -354,10 +466,15 @@ if (-not $DryRun) {
             $content = [System.IO.File]::ReadAllText($template)
             $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
             [System.IO.File]::WriteAllText($specFile, $content, $utf8NoBom)
+            Replace-FeaturePlaceholders -Path $specFile -FeatureTitle (Get-FeatureTitle -Suffix $branchSuffix) -FeaturePath "specs/$branchName"
         } else {
             New-Item -ItemType File -Path $specFile -Force | Out-Null
         }
     }
+
+    Initialize-FeatureScaffold -FeatureTitle (Get-FeatureTitle -Suffix $branchSuffix)
+    Persist-ActiveFeature
+    Refresh-ProjectRoutingMemory
 
     # Set the SPECIFY_FEATURE environment variable for the current session
     $env:SPECIFY_FEATURE = $branchName
